@@ -1,0 +1,34 @@
+{
+  "data_asset_type": "Dataset",
+  "expectation_suite_name": "basic_data_quality_checks",
+  "expectations": [
+    {
+      "expectation_type": "expect_column_to_exist",
+      "kwargs": {
+        "column": "id",
+        "result_format": "BASIC"
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "id",
+        "result_format": "BASIC"
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_table_row_count_to_be_between",
+      "kwargs": {
+        "min_value": 5,
+        "result_format": "BASIC"
+      },
+      "meta": {}
+    }
+  ],
+  "ge_cloud_id": null,
+  "meta": {
+    "great_expectations_version": "0.18.15"
+  }
+}
