@@ -1,5 +1,6 @@
 import boto3
 import pandas as pd
+from io import BytesIO
 from pathlib import Path
 
 s3 = boto3.client("s3")
@@ -29,7 +30,8 @@ def load_dataframe_from_s3(s3_path: str) -> pd.DataFrame:
         return pd.read_csv(obj["Body"])
 
     elif file_type == "excel":
-        return pd.read_excel(obj["Body"], engine="openpyxl")
+        file_bytes = obj["Body"].read()          # ← read stream
+        return pd.read_excel(BytesIO(file_bytes), engine="openpyxl")
 
     else:
         raise ValueError("Unsupported file type")
