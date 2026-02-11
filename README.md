@@ -1,29 +1,30 @@
-Data Validation Engine
+# Data Validation Engine
 
 A containerized data quality validation service that validates datasets from Amazon S3 using Great Expectations, computes quality metrics, stores results in PostgreSQL, and routes validated files based on success or failure.
 
-Overview
+## Overview
 
 This service acts as a data quality layer in data pipelines.
 
-Main capabilities
+## Main capabilities
 
-Load datasets from S3
+- Load datasets from S3
 
-Validate data using Great Expectations
+- Validate data using Great Expectations
 
-Compute additional data quality metrics
+- Compute additional data quality metrics
 
-Store validation run metadata in PostgreSQL
+- Store validation run metadata in PostgreSQL
 
-Save validation reports back to S3
+- Save validation reports back to S3
 
-Route datasets into passes/ or failed/ folders
+- Route datasets into passes/ or failed/ folders
 
-Architecture
+## Architecture
 
-Flow
+### Flow
 
+```
 S3 Dataset → Validation Engine → Great Expectations
                                         ↓
                                 Quality Metrics
@@ -31,8 +32,10 @@ S3 Dataset → Validation Engine → Great Expectations
                             Postgres (validation_runs)
                                         ↓
                     S3 validation-results/ + passes/failed/
+```
 
-Project Structure
+## Project Structure
+```
 .
 ├── main.py
 ├── create_suite.py
@@ -47,27 +50,30 @@ Project Structure
 │
 ├── gx/          # Great Expectations project
 └── test_data/   # Sample datasets
+```
 
-Prerequisites
+## Prerequisites
 
-Docker
+- Docker
+- AWS credentials with S3 access
+- PostgreSQL database
+- Network access from container to DB
 
-AWS credentials with S3 access
-
-PostgreSQL database
-
-Network access from container to DB
-
-Build Docker Image
+## Build Docker Image
+```bash
 docker build -t data-validation-engine .
+```
 
-Environment Variables
+## Environment Variables
+```bash
 export DB_HOST=<db-host>
 export DB_NAME=<database>
 export DB_USER=<username>
 export DB_PASSWORD=<password>
+```
 
-Run Validation
+## Run Validation
+```bash
 docker run --rm \
   -e DB_HOST=$DB_HOST \
   -e DB_NAME=$DB_NAME \
@@ -77,31 +83,27 @@ docker run --rm \
   --dataset s3://input-bucket/path/data.csv \
   --expectations my_expectation_suite \
   --results-bucket validation-results-bucket
+```
 
-Command Line Arguments
+## Command Line Arguments
 Argument	Description
 --dataset	S3 path to input dataset
 --expectations	Expectation suite name
 --results-bucket	S3 bucket for outputs
-Execution Steps
 
-Dataset downloaded from S3
+## Execution Steps
 
-Validated using Great Expectations
+1. Dataset downloaded from S3
+2. Validated using Great Expectations
+3. Metrics calculated (quality score, null ratio, duplicates, etc.)
+4. Run metadata stored in PostgreSQL
+5. JSON validation report saved to S3
+6. Dataset routed to:
+- passes/ if validation succeeded
+- failed/ if validation failed
 
-Metrics calculated (quality score, null ratio, duplicates, etc.)
-
-Run metadata stored in PostgreSQL
-
-JSON validation report saved to S3
-
-Dataset routed to:
-
-passes/ if validation succeeded
-
-failed/ if validation failed
-
-Output Structure in S3
+## Output Structure in S3
+```
 s3://<results-bucket>/
 
 validation-results/
@@ -112,19 +114,23 @@ passes/
 
 failed/
     <timestamp>_<file>
+```
 
-Exit Codes
+## Exit Codes
 Code	Meaning
-0	Validation PASSED
-1	Validation FAILED
+0   	Validation PASSED
+1	    Validation FAILED
 
 Designed to be used in Airflow, CI/CD pipelines, or automated quality gates.
 
-Creating an Expectation Suite
+## Creating an Expectation Suite
+```
 python create_suite.py \
   --dataset s3://input-bucket/sample.csv \
   --suite-name my_expectation_suite
+```
 
+```yml
 Example Console Output
 1. expect_column_to_exist
    Result : PASS
@@ -132,21 +138,18 @@ Example Console Output
 2. expect_column_values_to_not_be_null
    Result : FAIL
    Details: {'unexpected_count': 14}
+```
 
-Common Errors
-Problem	Cause
-DB WRITE FAILED	Incorrect DB credentials or DB unreachable
-Unsupported file format	Only CSV and Excel supported
-Suite not found	Expectation suite missing in gx/
-Access denied to S3	IAM permissions missing
-Tech Stack
+## Common Errors
+Problem	                    Cause
+DB WRITE FAILED	            Incorrect DB credentials or DB unreachable
+Unsupported file format	    Only CSV and Excel supported
+Suite not found         	Expectation suite missing in gx/
+Access denied to S3	        IAM permissions missing
 
-Storage: Amazon S3
-
-Validation: Great Expectations
-
-Processing: Pandas
-
-Observability: PostgreSQL
-
-Containerization: Docker
+## Tech Stack
+- Storage: Amazon S3
+- Validation: Great Expectations
+- Processing: Pandas
+- Observability: PostgreSQL
+- Containerization: Docker
