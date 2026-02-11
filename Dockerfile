@@ -8,6 +8,7 @@ RUN pip install --upgrade pip && \
 
 COPY main.py .
 COPY validation_engine ./validation_engine
+COPY data_loader ./data_loader
 COPY test_data ./test_data
 COPY gx ./gx
 
