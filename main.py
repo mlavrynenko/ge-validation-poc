@@ -1,22 +1,23 @@
 import argparse
-import uuid
 import sys
+import uuid
 import json
 import boto3
 import pandas as pd
 from pathlib import Path
+from datetime import datetime
+
+from data_loader.s3_loader import load_dataframe_from_s3, parse_s3_path
 from validation_engine.validation import validation_dataframe, save_run_to_db
 
 s3 = boto3.client("s3")
 
-#--dataset s3://dataquality-poc-input/incoming/<dataset>/input_dataset.csv
-def parse_s3_path(path:str):
-     parts = path.replace("s3://","").split("/",1)
-     return parts[0], parts[1]
+def generate_run_timestamp():
+    return datetime.utcnow().strftime("%Y-%m-%dT%H-%M-%S")
 
-def extract_filename(key:str, run_id:str):
+def extract_filename(key:str, timestamp:str):
     #incoming/input_dataset.csv
-    output_name = f"{run_id}_{Path(key).name}"
+    output_name = f"{timestamp}_{Path(key).name}"
     return output_name
 
 def save_outputs(input_bucket:str,
@@ -59,16 +60,17 @@ def main():
 
     #Load CSV from S3
     bucket, key = parse_s3_path(args.dataset)
-    obj = s3.get_object(Bucket=bucket, Key=key)
-    df = pd.read_csv(obj["Body"])
+    df = load_dataframe_from_s3(args.dataset)
 
     #Run GE validation
     result = validation_dataframe(df, args.expectations)
 
     run_id = str(uuid.uuid4())
+    run_timestamp = generate_run_timestamp()
 
     result.setdefault("meta", {}).update({
         "run_id": run_id,
+        "run_timestamp": run_timestamp,
         "input_bucket": bucket,
         "input_key": key,
         "validated_at": pd.Timestamp.utcnow().isoformat(),
@@ -88,7 +90,7 @@ def main():
         input_key=key,
         output_bucket=args.results_bucket,
         validation_result=result,
-        run_id=run_id,
+        run_id=run_timestamp,
     )
 
     print("\n🔎 Validation results per rule:\n")

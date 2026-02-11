@@ -1,19 +1,25 @@
+import argparse
 import great_expectations as ge
-import pandas as pd
+
+from data_loader.s3_loader import load_dataframe_from_s3
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset", required=True)
+    parser.add_argument("--suite-name", required=True)
+    args = parser.parse_args()
+
     context = ge.get_context(context_root_dir="gx")
 
-    suite_name = "basic_data_quality_checks"
-
     # Load sample data
-    df = pd.read_csv("test_data/valid_dataset.csv")
+    df = load_dataframe_from_s3(args.dataset)
 
-    # Create validator properly via DataContext
+    # Create validator
     validator = context.get_validator(
         batch_data=df,
-        expectation_suite_name=suite_name
+        expectation_suite_name=args.suite_name,
+        create_expectation_suite=True,
     )
 
     # Add expectations
