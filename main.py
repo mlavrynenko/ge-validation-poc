@@ -1,14 +1,21 @@
-import argparse
 import sys
 import uuid
 import json
 import boto3
+import logging
+import argparse
 import pandas as pd
 from pathlib import Path
 from datetime import datetime
 
+from db.connection import get_db_cursor
+from core.logging_config import setup_logging
+
+from repository.validation_run_repository import insert_validation_run
+from repository.validation_rule_repository import insert_rule_results
+
 from data_loader.s3_loader import load_dataframe_from_s3, parse_s3_path
-from validation_engine.validation import validation_dataframe, save_run_to_db
+from validation_engine.validation import validation_dataframe
 
 s3 = boto3.client("s3")
 
@@ -28,13 +35,13 @@ def save_outputs(input_bucket:str,
                  ):
     filename = extract_filename(input_key, run_id)
 
-    validation_json = json.loads(json.dumps(validation_result, default=str))
+    validation_json = json.dumps(validation_result, default=str, indent=2)
 
     # 1️⃣ Save validation result JSON
     s3.put_object(
         Bucket=output_bucket,
         Key=f"validation-results/{filename}.validation.json",
-        Body=json.dumps(validation_json, indent=2),
+        Body=validation_json,
         ContentType="application/json",
     )
 
@@ -49,14 +56,17 @@ def save_outputs(input_bucket:str,
 
 
 def main():
+    setup_logging()
+    logger = logging.getLogger(__name__)
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", required=True)
     parser.add_argument("--expectations", required=True)
     parser.add_argument("--results-bucket", required=True)
     args = parser.parse_args()
 
-    print(f"Reading dataset from: {args.dataset}")
-    print(f"Using expectation suite: {args.expectations}")
+    logger.info("Reading dataset from: %s", args.dataset)
+    logger.info("Using expectation suite: %s", args.expectations)
 
     #Load CSV from S3
     bucket, key = parse_s3_path(args.dataset)
@@ -80,9 +90,18 @@ def main():
 
     result["meta"].update(result["metrics"])
 
-    print("💾 Saving validation run to Postgres...")
-    save_run_to_db(result)
-    print("✅ Saved to Postgres")
+    logger.info("Saving validation run to Postgres...")
+
+    try:
+        with get_db_cursor() as cur:
+            insert_validation_run(result, cur)
+            insert_rule_results(result, cur)
+
+        logger.info("Saved to Postgres")
+
+    except Exception as e:
+        logger.exception("DB transaction failed")
+        raise
 
     #Save GE result
     save_outputs(
@@ -93,28 +112,41 @@ def main():
         run_id=run_timestamp,
     )
 
-    print("\n🔎 Validation results per rule:\n")
+    logger.info("Validation report saved to S3 bucket: %s", args.results_bucket)
+
+    logger.info("Validation results per rule:")
 
     for idx, r in enumerate(result["results"], start=1):
         expectation = r["expectation_config"]["expectation_type"]
-        kwargs = r["expectation_config"].get("kwargs", {})
+        column = r["expectation_config"].get("kwargs", {}).get("column")
+        unexpected = r.get("result", {}).get("unexpected_count", 0)
         success = r["success"]
 
-        status = "✅ PASS" if success else "❌ FAIL"
+        logger.info(
+            "Rule %s | %s | column=%s | %s | unexpected=%s",
+            idx,
+            expectation,
+            column,
+            unexpected
+        )
 
-        print(f"{idx}. {expectation}")
-        print(f"   Params : {kwargs}")
-        print(f"   Result : {status}")
+        logger.info(
+            "Rule %s | %s | column=%s | %s | unexpected=%s",
+            idx,
+            expectation,
+            column,
+            "PASS" if success else "FAIL",
+            unexpected
+        )
 
         if not success:
-            print(f"   Details: {r.get('result')}")
-        print()
+            logger.warning("Details: %s", r.get("result"))
 
     if not result["success"]:
-        print("❌ Dataset validation FAILED")
+        logger.error("Dataset validation FAILED")
         sys.exit(1)
 
-    print("🎉 Dataset validation PASSED")
+    logger.info("Dataset validation PASSED")
     sys.exit(0)
 
 

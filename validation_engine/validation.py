@@ -1,68 +1,6 @@
-import os
 import time
-import psycopg2
 import great_expectations as ge
 import pandas as pd
-
-def save_run_to_db(result):
-    try:
-        conn = psycopg2.connect(
-            host=os.getenv("DB_HOST"),
-            database=os.getenv("DB_NAME"),
-            user=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASSWORD"),
-            port=5432,
-            connect_timeout=5,
-        )
-
-        cur = conn.cursor()
-        cur.execute(
-            """
-            INSERT INTO validation_runs(
-                run_id, 
-                dataset, 
-                success, 
-                validated_at, 
-                row_count,
-                validation_duration_ms,
-                rules_total,
-                rules_passed,
-                rules_failed,
-                quality_score,
-                null_ratio,
-                duplicate_ratio,
-                schema_changed,
-                invalid_row_count                                    
-            )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """,
-            (
-                result["meta"]["run_id"],
-                result["meta"]["input_key"],
-                result["success"],
-                result["meta"]["validated_at"],
-                result["meta"]["row_count"],
-                result["meta"]["validation_duration_ms"],
-                result["meta"]["rules_total"],
-                result["meta"]["rules_passed"],
-                result["meta"]["rules_failed"],
-                result["meta"]["quality_score"],
-                result["meta"]["null_ratio"],
-                result["meta"]["duplicate_ratio"],
-                result["meta"]["schema_changed"],
-                result["meta"]["invalid_row_count"],
-            )
-        )
-        conn.commit()
-
-    except Exception as e:
-        print(f"❌ DB WRITE FAILED: {e}")
-        raise
-
-    finally:
-        if 'cur' in locals(): cur.close()
-        if 'conn' in locals(): conn.close()
-
 
 def validation_dataframe(df: pd.DataFrame, suite_name: str) -> dict:
     start = time.time()
