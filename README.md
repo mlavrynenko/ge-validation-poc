@@ -22,34 +22,54 @@ This service acts as a data quality layer in data pipelines.
 
 ## Architecture
 
-### Flow
+### High-Level Flow
 
 ```
-S3 Dataset → Validation Engine → Great Expectations
-                                        ↓
-                                Quality Metrics
-                                        ↓
-                            Postgres (validation_runs)
-                                        ↓
-                    S3 validation-results/ + passes/failed/
+S3 Dataset 
+     ↓
+Validation Engine  
+     ↓
+Great Expectations Validation
+     ↓
+Quality Metrics Computation
+     ↓
+PostgreSQL
+├── validation_runs (run-level summary)
+└── validation_rule_results (rule-level results)
+     ↓
+S3 Outputs
+├── validation-results/
+├── passes/
+└── failed/
 ```
 
 ## Project Structure
 ```
 .
 ├── main.py
-├── create_suite.py
 ├── Dockerfile
 ├── requirements.txt
+├── README.md
+│
+├── core/
+│ └── logging_config.py
+│
+├── db/
+│ ├── init.py
+│ └── connection.py
+│
+├── repository/
+│ ├── validation_run_repository.py
+│ └── validation_rule_repository.py
 │
 ├── data_loader/
-│   └── s3_loader.py
+│ └── s3_loader.py
 │
 ├── validation_engine/
-│   └── validation.py
+│ └── validation.py
 │
-├── gx/          # Great Expectations project
-└── test_data/   # Sample datasets
+├── gx/ # Great Expectations project
+└── test_data/ # Sample datasets
 ```
 
 ## Prerequisites
@@ -86,10 +106,11 @@ docker run --rm \
 ```
 
 ## Command Line Arguments
-Argument	Description
---dataset	S3 path to input dataset
---expectations	Expectation suite name
---results-bucket	S3 bucket for outputs
+| Argument | Description |
+|----------|------------|
+| --dataset | S3 path to input dataset |
+| --expectations | Expectation suite name |
+| --results-bucket | S3 bucket for outputs |
 
 ## Execution Steps
 
@@ -140,12 +161,47 @@ Example Console Output
    Details: {'unexpected_count': 14}
 ```
 
+## Database Schema
+
+### validation_runs
+
+| Column | Description |
+|--------|------------|
+| run_id | Unique validation run ID |
+| dataset | S3 object key |
+| success | Overall validation result |
+| validated_at | Execution timestamp |
+| row_count | Number of rows in dataset |
+| rules_total | Total expectations executed |
+| rules_passed | Passed expectations |
+| rules_failed | Failed expectations |
+| quality_score | rules_passed / rules_total |
+| null_ratio | Ratio of null values |
+| duplicate_ratio | Ratio of duplicate rows |
+| schema_changed | Boolean flag |
+| invalid_row_count | Aggregated unexpected count |
+
+---
+
+### validation_rule_results
+
+| Column | Description |
+|--------|------------|
+| run_id | Foreign key to validation_runs |
+| validated_at | Execution timestamp |
+| dataset | S3 object key |
+| expectation_type | Rule name |
+| column_name | Column validated |
+| success | Rule result |
+| unexpected_count | Number of unexpected values |
+
 ## Common Errors
-Problem	                    Cause
-DB WRITE FAILED	            Incorrect DB credentials or DB unreachable
-Unsupported file format	    Only CSV and Excel supported
-Suite not found         	Expectation suite missing in gx/
-Access denied to S3	        IAM permissions missing
+| Problem | Cause |
+|---------|------|
+| DB WRITE FAILED | Incorrect DB credentials or DB unreachable |
+| Unsupported file format | Only CSV and Excel supported |
+| Suite not found | Expectation suite missing in gx/ |
+| Access denied to S3 | IAM permissions missing |
 
 ## Tech Stack
 - Storage: Amazon S3
