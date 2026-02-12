@@ -127,14 +127,6 @@ def main():
             idx,
             expectation,
             column,
-            unexpected
-        )
-
-        logger.info(
-            "Rule %s | %s | column=%s | %s | unexpected=%s",
-            idx,
-            expectation,
-            column,
             "PASS" if success else "FAIL",
             unexpected
         )
