@@ -30,7 +30,7 @@ def main():
     # Save expectation suite
     validator.save_expectation_suite()
 
-    print(f"Expectation suite '{suite_name}' created successfully")
+    print(f"Expectation suite '{args.suite_name}' created successfully")
 
 
 if __name__ == "__main__":
