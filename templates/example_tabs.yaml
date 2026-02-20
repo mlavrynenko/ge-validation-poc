@@ -1,0 +1,83 @@
+template_id: example_tabs
+version: 1
+file_type: excel
+file_pattern: "^Excel_.*\\.xlsx$"
+
+sheets:
+  - name: Tab A
+    required: true
+    header_row: 1
+
+    columns:
+      col 1:
+        required: true
+        type: string
+      col 2:
+        required: true
+        type: string
+      col 3:
+        required: true
+        type: string
+      col 4:
+        required: true
+        type: string
+      col 5:
+        required: true
+        type: decimal
+      col 6:
+        required: true
+        type: int
+      col 7:
+        required: true
+        type: decimal
+      col 8:
+        required: true
+        type: int
+      col 9:
+        required: true
+        type: decimal
+      col 10:
+        required: true
+        type: int
+
+    expectations:
+      - tab_a_checks
+
+  - name: Tab B
+    required: true
+    header_row: 1
+
+    columns:
+      col 1:
+        required: true
+        type: string
+      col 2:
+        required: true
+        type: string
+      col 3:
+        required: true
+        type: string
+      col 4:
+        required: true
+        type: string
+      col 5:
+        required: true
+        type: decimal
+      col 6:
+        required: true
+        type: int
+      col 7:
+        required: true
+        type: decimal
+      col 8:
+        required: true
+        type: int
+      col 9:
+        required: true
+        type: decimal
+      col 10:
+        required: true
+        type: int
+
+    expectations:
+      - tab_b_checks

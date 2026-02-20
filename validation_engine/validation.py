@@ -2,7 +2,7 @@ import time
 import great_expectations as ge
 import pandas as pd
 
-def validation_dataframe(df: pd.DataFrame, suite_name: str) -> dict:
+def validate_dataframe(df: pd.DataFrame, suite_name: str) -> dict:
     start = time.time()
 
     validator = ge.from_pandas(df)
@@ -31,14 +31,18 @@ def validation_dataframe(df: pd.DataFrame, suite_name: str) -> dict:
     duplicate_ratio = round(df.duplicated().sum() / len(df), 4) if len(df) else 0
 
     #Invalid rows estimate (from falling expectations)
-    invalid_raw_count = sum(
+    invalid_row_count = sum(
         r.get("result", {}).get("unexpected_count", 0)
         for r in ge_result["results"]
         if not r["success"]
     )
 
     #Schema drift detection
-    expected_columns = [e["kwargs"]["column"] for e in suite.expectations if "column" in e["kwargs"]]
+    expected_columns = {
+        e["kwargs"]["column"]
+        for e in suite.expectations
+        if "column" in e["kwargs"]
+    }
     schema_changed = set(df.columns) != set(expected_columns)
 
     ge_result["metrics"] = {
@@ -50,7 +54,7 @@ def validation_dataframe(df: pd.DataFrame, suite_name: str) -> dict:
         "null_ratio": null_ratio,
         "duplicate_ratio": duplicate_ratio,
         "schema_changed": schema_changed,
-        "invalid_row_count": invalid_raw_count,
+        "invalid_row_count": invalid_row_count,
     }
 
     return ge_result
