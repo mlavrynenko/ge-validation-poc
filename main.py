@@ -20,32 +20,15 @@ def main():
         help="S3 path to input dataset (e.g. s3://bucket/key)",
     )
 
-    parser.add_argument(
-        "--expectations",
-        required=True,
-        help="Great Expectations expectation suite name",
-    )
-
-    parser.add_argument(
-        "--results-bucket",
-        required=True,
-        help="S3 bucket for validation outputs",
-    )
-
     args = parser.parse_args()
 
     logger.info(
-        "Starting validation | dataset=%s | suite=%s",
+        "Starting validation | dataset=%s",
         args.dataset,
-        args.expectations,
     )
 
     try:
-        handle_file(
-            dataset=args.dataset,
-            expectation_suite=args.expectations,
-            results_bucket=args.results_bucket,
-        )
+        handle_file(args.dataset)
     except Exception:
         logger.exception("Validation pipeline failed")
         sys.exit(1)
