@@ -38,7 +38,7 @@ def handle_file(s3_path: str):
 
     file_bytes = download_file_bytes(s3_path)
 
-    run_id = uuid.uuid4()
+    run_id = str(uuid.uuid4())
     validated_at = datetime.utcnow()
 
     meta = {
