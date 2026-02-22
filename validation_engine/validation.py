@@ -5,12 +5,13 @@ import pandas as pd
 def validate_dataframe(df: pd.DataFrame, suite_name: str) -> dict:
     start = time.time()
 
-    validator = ge.from_pandas(df)
-
     context = ge.get_context()
     suite = context.get_expectation_suite(suite_name)
 
-    validator._expectation_suite = suite
+    validator = context.get_validator(
+        batch_data=df,
+        expectation_suite_name=suite_name,
+    )
 
     ge_result = validator.validate(result_format="SUMMARY").to_json_dict()
 
@@ -43,7 +44,7 @@ def validate_dataframe(df: pd.DataFrame, suite_name: str) -> dict:
         for e in suite.expectations
         if "column" in e["kwargs"]
     }
-    schema_changed = set(df.columns) != set(expected_columns)
+    schema_changed = not expected_columns.issubset(set(df.columns))
 
     ge_result["metrics"] = {
         "validation_duration_ms": duration_ms,

@@ -1,7 +1,7 @@
 template_id: example_tabs
 version: 1
 file_type: excel
-file_pattern: "^Excel_.*\\.xlsx$"
+file_pattern: ".*incoming/Excel.*\\.xlsx$"
 
 sheets:
   - name: Tab A
@@ -45,7 +45,7 @@ sheets:
 
   - name: Tab B
     required: true
-    header_row: 1
+    header_row: 8
 
     columns:
       col 1:

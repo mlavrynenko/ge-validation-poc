@@ -12,7 +12,7 @@ class TemplateResolver:
         matches = []
 
         for template in self.templates:
-            if re.match(template.file_pattern, filename):
+            if re.search(template.file_pattern, filename):
                 matches.append(template)
         if not matches:
             return None

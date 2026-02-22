@@ -55,16 +55,17 @@ def handle_file(s3_path: str):
         for sheet in template.sheets:
             logger.info("Processing sheet '%s'", sheet.name)
 
-            df = parser.read(
+            # 🔹 1. Read FULL sheet (no column filtering)
+            df_raw = parser.read(
                 file_bytes=file_bytes,
                 sheet_name=sheet.name,
                 header=sheet.header_row,
-                usecols=list(sheet.columns.keys()) if sheet.columns else None,
+                usecols=None,
             )
 
-            # 1️⃣ Structural validation
+            # 🔹 2. Structural validation on full data
             try:
-                structural_result = run_structural_checks(df, sheet)
+                structural_result = run_structural_checks(df_raw, sheet)
             except StructuralValidationError as e:
                 structural_result = e.args[0]
 
@@ -80,7 +81,7 @@ def handle_file(s3_path: str):
                     sheet.name,
                     structural_result["errors"],
                 )
-                return
+                continue
 
             insert_structural_result(
                 result=structural_result,
@@ -89,7 +90,14 @@ def handle_file(s3_path: str):
                 cur=cur,
             )
 
-            # 2️⃣ GE validation
+            # 🔹 3. Project only expected columns for GE
+            if sheet.columns:
+                expected_columns = list(sheet.columns.keys())
+                df = df_raw[expected_columns]
+            else:
+                df = df_raw
+
+            # 🔹 4. GE validation
             for suite_name in sheet.expectations or []:
                 ge_result = validate_dataframe(df, suite_name)
 
