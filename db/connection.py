@@ -6,8 +6,9 @@ from contextlib import contextmanager
 def get_connection():
     """
     Create and return a new PostgreSQL connection.
+    Sets search_path so unqualified table names resolve correctly.
     """
-    return psycopg2.connect(
+    conn = psycopg2.connect(
         host=os.getenv("DB_HOST"),
         database=os.getenv("DB_NAME"),
         user=os.getenv("DB_USER"),
@@ -15,6 +16,12 @@ def get_connection():
         port=5432,
         connect_timeout=5,
     )
+
+    # ✅ Ensure dq schema is used by default
+    with conn.cursor() as cur:
+        cur.execute("SET search_path TO dq, public")
+
+    return conn
 
 
 @contextmanager
