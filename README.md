@@ -3,6 +3,8 @@
 This project requires **Python 3.11**.
 Python 3.12+ is not supported due to NumPy / Pandas compatibility.
 
+The Docker image also uses Python 3.11 to ensure consistency between local and container execution.
+
 # Data Validation Engine
 
 A containerized, template-driven data quality validation service for validating
@@ -137,6 +139,14 @@ sheets:
     expectations:
       - tab_a_checks
 ```        
+### Logical Sheets
+
+For non-Excel formats (Parquet, Iceberg), templates still define a logical `sheet`:
+
+```yaml
+sheets:
+  - name: data
+```
 
 ## Prerequisites
 
@@ -165,6 +175,7 @@ docker run --rm \
   -e DB_NAME=$DB_NAME \
   -e DB_USER=$DB_USER \
   -e DB_PASSWORD=$DB_PASSWORD \
+  -e RESULTS_BUCKET=dataquality-poc-validation-results \
   data-validation-engine \
   --dataset s3://input-bucket/path/data.xlsx
 ```
@@ -187,47 +198,35 @@ docker run --rm \
 - passes/ if validation succeeded
 - failed/ if validation failed
 
-## Output Structure in S3
-```
-s3://<results-bucket>/
+### Output structure
+
+```text
+s3://<RESULTS_BUCKET>/
 
 validation-results/
-    <timestamp>_<file>.validation.json
+  <timestamp>__<dataset>__<sheet>.json
 
 passes/
-    <timestamp>_<file>
+  <timestamp>__<dataset>__dataset.<ext>
 
 failed/
-    <timestamp>_<file>
+  <timestamp>__<dataset>__dataset.<ext>
 ```
-
-## Exit Codes
-Code	Meaning
-0   	Validation PASSED
-1	    Validation FAILED
-
-Designed to be used in Airflow, CI/CD pipelines, or automated quality gates.
 
 ## Creating an Expectation Suite
-```
-Expectation suites are generated from templates and sample datasets.
 
-```bash
-python -m scripts.create_expectation_suite \
-  --dataset s3://input-bucket/sample.xlsx \
-  --template-id example_tabs \
-  --sheet-name "Tab A" \
-  --suite-name tab_a_checks
-```
+Expectation suites must exist before validation runs.
 
-```yml
-Example Console Output
-1. expect_column_to_exist
-   Result : PASS
+Suites can be generated from templates and sample datasets.
 
-2. expect_column_values_to_not_be_null
-   Result : FAIL
-   Details: {'unexpected_count': 14}
+### PowerShell (Windows)
+
+```powershell
+python -m scripts.create_expectation_suite `
+  --dataset s3://input-bucket/path/data.parquet `
+  --template-id orders_parquet `
+  --sheet-name data `
+  --suite-name orders_parquet_checks
 ```
 
 ## Update Database Schema section (schema-aware)
@@ -283,13 +282,13 @@ All tables are stored in the `dq` schema.
 
 ## Common Errors
 
-| Problem | Cause |
-|------|------|
-| No template matches file | Dataset path does not match any template regex |
-| expectation_suite not found | Suite not created in gx/expectations |
-| permission denied for schema dq | Missing GRANT USAGE on schema |
-| Unsupported file type | file_type not registered in parser registry |
-| Iceberg table not found | Catalog or table identifier incorrect |
+| Error | Cause | Fix |
+|-----|------|-----|
+| No template matches file | Regex does not match dataset path | Update `file_pattern` |
+| expectation_suite not found | Suite not created | Run `create_expectation_suite` |
+| Unsupported file type | Parser not registered | Add parser support |
+| numpy import error | Python > 3.11 | Downgrade to Python 3.11 |
+| S3 artefacts not written | RESULTS_BUCKET not set | Set env var or CLI override |
 
 ## Tech Stack
 - Storage: Amazon S3
