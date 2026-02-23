@@ -31,9 +31,17 @@ from repository.structural_validation_repository import insert_structural_result
 setup_logging()
 logger = logging.getLogger(__name__)
 
+# -------------------------------------------------
+# Optional S3 outputs
+# -------------------------------------------------
 RESULTS_BUCKET = os.getenv("RESULTS_BUCKET")
-if not RESULTS_BUCKET:
-    raise RuntimeError("RESULTS_BUCKET environment variable is required")
+ENABLE_S3_OUTPUTS = bool(RESULTS_BUCKET)
+
+if ENABLE_S3_OUTPUTS:
+    logger.info("S3 outputs enabled | bucket=%s", RESULTS_BUCKET)
+else:
+    logger.info("S3 outputs disabled (RESULTS_BUCKET not set)")
+
 
 PARSERS = {
     "csv": CsvParser,
@@ -46,9 +54,9 @@ registry = TemplateRegistry("templates")
 resolver = TemplateResolver(registry.templates)
 
 
-# ------------------------------------------------------------------
+# -------------------------------------------------
 # Run-level helpers
-# ------------------------------------------------------------------
+# -------------------------------------------------
 
 def init_run_summary(meta: dict) -> dict:
     return {
@@ -95,9 +103,9 @@ def accumulate_metrics(run_summary: dict, ge_result: dict) -> None:
         )
 
 
-# ------------------------------------------------------------------
+# -------------------------------------------------
 # Main handler
-# ------------------------------------------------------------------
+# -------------------------------------------------
 
 def handle_file(s3_path: str) -> dict:
     template = resolver.resolve(s3_path)
@@ -126,7 +134,6 @@ def handle_file(s3_path: str) -> dict:
     }
 
     run_summary = init_run_summary(meta)
-
     sanitized_dataset = s3_path.replace("s3://", "").replace("/", "_")
 
     with get_db_cursor() as cur:
@@ -134,7 +141,7 @@ def handle_file(s3_path: str) -> dict:
             logger.info("Processing sheet '%s'", sheet.name)
 
             # ----------------------
-            # Read dataset
+            # Read data
             # ----------------------
             if template.file_type == "iceberg":
                 df_raw = parser.read(
@@ -201,20 +208,21 @@ def handle_file(s3_path: str) -> dict:
                     **ge_result["metrics"],
                 }
 
-                # 🔹 Persist GE JSON to S3
-                ge_key = (
-                    f"validation-results/"
-                    f"run_id={run_id}/"
-                    f"dataset={sanitized_dataset}/"
-                    f"sheet={sheet.name}/"
-                    f"suite={suite_name}.json"
-                )
+                # --- Optional: persist GE JSON to S3
+                if ENABLE_S3_OUTPUTS:
+                    ge_key = (
+                        f"validation-results/"
+                        f"run_id={run_id}/"
+                        f"dataset={sanitized_dataset}/"
+                        f"sheet={sheet.name}/"
+                        f"suite={suite_name}.json"
+                    )
 
-                upload_json(
-                    bucket=RESULTS_BUCKET,
-                    key=ge_key,
-                    payload=ge_result,
-                )
+                    upload_json(
+                        bucket=RESULTS_BUCKET,
+                        key=ge_key,
+                        payload=ge_result,
+                    )
 
                 accumulate_metrics(run_summary, ge_result)
                 insert_rule_results(ge_result, cur)
@@ -231,9 +239,9 @@ def handle_file(s3_path: str) -> dict:
         insert_validation_run(run_summary, cur)
 
     # ----------------------
-    # Route original dataset
+    # Optional: route original dataset
     # ----------------------
-    if file_bytes:
+    if ENABLE_S3_OUTPUTS and file_bytes:
         status_prefix = "passes" if run_summary["success"] else "failed"
 
         archive_key = (
@@ -253,5 +261,7 @@ def handle_file(s3_path: str) -> dict:
         "success": run_summary["success"],
         "results_prefix": (
             f"s3://{RESULTS_BUCKET}/validation-results/run_id={run_id}/"
+            if ENABLE_S3_OUTPUTS
+            else None
         ),
     }
