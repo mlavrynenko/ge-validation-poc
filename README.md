@@ -1,3 +1,8 @@
+### Python version
+
+This project requires **Python 3.11**.
+Python 3.12+ is not supported due to NumPy / Pandas compatibility.
+
 # Data Validation Engine
 
 A containerized, template-driven data quality validation service for validating

@@ -1,0 +1,25 @@
+template_id: orders_parquet
+version: 1
+
+file_type: parquet
+file_pattern: ".*\\.parquet$"
+
+sheets:
+  - name: data
+    required: true
+
+    columns:
+      id:
+        required: true
+        type: integer
+
+      order_amount:
+        required: true
+        type: decimal
+
+      created_at:
+        required: true
+        type: date
+
+    expectations:
+      - orders_parquet_checks

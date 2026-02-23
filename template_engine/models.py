@@ -8,7 +8,7 @@ class ColumnDef(BaseModel):
 class SheetDef(BaseModel):
     name: str
     required: bool
-    header_row: int
+    header_row: Optional[int] = None
     columns: Optional[Dict[str, ColumnDef]] = None
     expectations: Optional[List[str]] = None
 

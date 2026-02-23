@@ -6,6 +6,7 @@ from pathlib import Path
 from core.logging_config import setup_logging
 from file_parser.csv import CsvParser
 from file_parser.excel import ExcelParser
+from file_parser.parquet import ParquetParser
 from data_loader.s3_loader import download_file_bytes
 from template_engine.registry import TemplateRegistry
 from template_engine.resolver import TemplateResolver
@@ -15,8 +16,9 @@ TEMPLATES_DIR = PROJECT_ROOT / "templates"
 GX_DIR = PROJECT_ROOT / "gx"
 
 PARSERS = {
-    "excel": ExcelParser,
     "csv": CsvParser,
+    "excel": ExcelParser,
+    "parquet": ParquetParser,
 }
 
 
@@ -55,12 +57,35 @@ def main():
 
     file_bytes = download_file_bytes(args.dataset)
 
-    df = PARSERS[template.file_type].read(
-        file_bytes=file_bytes,
-        sheet_name=sheet.name,
-        header=sheet.header_row,
-        usecols=list(sheet.columns.keys()) if sheet.columns else None,
-    )
+    # ----------------------
+    # Read dataset for suite creation
+    # ----------------------
+
+    parser = PARSERS[template.file_type]
+
+    if template.file_type == "parquet":
+        df = parser.read(
+            file_bytes=file_bytes,
+            usecols=list(sheet.columns.keys()) if sheet.columns else None,
+        )
+
+    elif template.file_type == "csv":
+        df = parser.read(
+            file_bytes=file_bytes,
+            header=sheet.header_row,
+            usecols=list(sheet.columns.keys()) if sheet.columns else None,
+        )
+
+    elif template.file_type == "excel":
+        df = parser.read(
+            file_bytes=file_bytes,
+            sheet_name=sheet.name,
+            header=sheet.header_row,
+            usecols=list(sheet.columns.keys()) if sheet.columns else None,
+        )
+
+    else:
+        raise ValueError(f"Unsupported file type for suite creation: {template.file_type}")
 
     validator = ge.from_pandas(df)
     validator.context = context
