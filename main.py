@@ -1,4 +1,5 @@
 import sys
+import os
 import logging
 import argparse
 
@@ -20,7 +21,21 @@ def main():
         help="S3 path to input dataset (e.g. s3://bucket/key)",
     )
 
+    parser.add_argument(
+        "--results-bucket",
+        required=False,
+        help="S3 bucket for validation outputs",
+    )
+
     args = parser.parse_args()
+
+    # 🔑 CLI override wins
+    if args.results_bucket:
+        os.environ["RESULTS_BUCKET"] = args.results_bucket
+        logger.info(
+            "RESULTS_BUCKET set from CLI | bucket=%s",
+            args.results_bucket,
+        )
 
     logger.info(
         "Starting validation | dataset=%s",
@@ -42,12 +57,11 @@ def main():
     if result["outputs_enabled"]:
         logger.info(
             "Validation artefacts stored at %s",
-            result["results_prefix"],
+            result["results_location"],
         )
     else:
         logger.info("S3 artefacts not written (RESULTS_BUCKET not set)")
 
-    # CI / Airflow-friendly exit code
     sys.exit(0 if result["success"] else 1)
 
 

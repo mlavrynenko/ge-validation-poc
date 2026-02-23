@@ -1,6 +1,7 @@
 import uuid
 import logging
 import os
+import re
 from datetime import datetime
 
 from core.logging_config import setup_logging
@@ -28,21 +29,16 @@ from repository.validation_run_repository import insert_validation_run
 from repository.structural_validation_repository import insert_structural_result
 
 
+# -------------------------------------------------------------------
+# Logging
+# -------------------------------------------------------------------
 setup_logging()
 logger = logging.getLogger(__name__)
 
-# -------------------------------------------------
-# Optional S3 outputs
-# -------------------------------------------------
-RESULTS_BUCKET = os.getenv("RESULTS_BUCKET")
-ENABLE_S3_OUTPUTS = bool(RESULTS_BUCKET)
 
-if ENABLE_S3_OUTPUTS:
-    logger.info("S3 outputs enabled | bucket=%s", RESULTS_BUCKET)
-else:
-    logger.info("S3 outputs disabled (RESULTS_BUCKET not set)")
-
-
+# -------------------------------------------------------------------
+# Parsers
+# -------------------------------------------------------------------
 PARSERS = {
     "csv": CsvParser,
     "excel": ExcelParser,
@@ -50,13 +46,40 @@ PARSERS = {
     "iceberg": IcebergParser,
 }
 
+
 registry = TemplateRegistry("templates")
 resolver = TemplateResolver(registry.templates)
 
 
-# -------------------------------------------------
-# Run-level helpers
-# -------------------------------------------------
+# -------------------------------------------------------------------
+# Helpers
+# -------------------------------------------------------------------
+def safe_name(value: str) -> str:
+    """
+    Convert string to S3 / filesystem-safe name.
+    """
+    value = value.strip().replace(" ", "_")
+    value = re.sub(r"[^a-zA-Z0-9_.-]", "", value)
+    return value
+
+
+def build_key(
+    *,
+    validated_at: datetime,
+    dataset: str,
+    sheet: str,
+    extension: str,
+    prefix: str,
+) -> str:
+    """
+    <prefix>/<timestamp>__<dataset>__<sheet>.<ext>
+    """
+    timestamp = validated_at.strftime("%Y-%m-%dT%H-%M-%S")
+    return (
+        f"{prefix}/"
+        f"{timestamp}__{safe_name(dataset)}__{safe_name(sheet)}.{extension}"
+    )
+
 
 def init_run_summary(meta: dict) -> dict:
     return {
@@ -103,11 +126,24 @@ def accumulate_metrics(run_summary: dict, ge_result: dict) -> None:
         )
 
 
-# -------------------------------------------------
+# -------------------------------------------------------------------
 # Main handler
-# -------------------------------------------------
-
+# -------------------------------------------------------------------
 def handle_file(s3_path: str) -> dict:
+    """
+    Validate dataset and optionally persist results to S3.
+    """
+
+    # ---- runtime config (NOT import-time) ----
+    RESULTS_BUCKET = os.getenv("RESULTS_BUCKET")
+    ENABLE_S3_OUTPUTS = bool(RESULTS_BUCKET)
+
+    if ENABLE_S3_OUTPUTS:
+        logger.info("S3 outputs enabled | bucket=%s", RESULTS_BUCKET)
+    else:
+        logger.info("S3 outputs disabled (RESULTS_BUCKET not set)")
+
+    # ---- template resolution ----
     template = resolver.resolve(s3_path)
     if not template:
         raise ValueError("No template matches file")
@@ -117,6 +153,7 @@ def handle_file(s3_path: str) -> dict:
 
     parser = PARSERS[template.file_type]
 
+    # ---- read input ----
     file_bytes = (
         None if template.file_type == "iceberg"
         else download_file_bytes(s3_path)
@@ -124,6 +161,7 @@ def handle_file(s3_path: str) -> dict:
 
     run_id = str(uuid.uuid4())
     validated_at = datetime.utcnow()
+    dataset_name = s3_path.split("/")[-1]
 
     meta = {
         "run_id": run_id,
@@ -135,13 +173,12 @@ def handle_file(s3_path: str) -> dict:
 
     run_summary = init_run_summary(meta)
 
+    # ---- main execution ----
     with get_db_cursor() as cur:
         for sheet in template.sheets:
             logger.info("Processing sheet '%s'", sheet.name)
 
-            # ----------------------
             # Read data
-            # ----------------------
             if template.file_type == "iceberg":
                 df_raw = parser.read(
                     table_identifier=s3_path.replace("iceberg://", ""),
@@ -158,9 +195,7 @@ def handle_file(s3_path: str) -> dict:
                     )
                 df_raw = parser.read(**read_kwargs)
 
-            # ----------------------
             # Structural validation
-            # ----------------------
             try:
                 structural_result = run_structural_checks(df_raw, sheet)
             except StructuralValidationError as e:
@@ -188,9 +223,7 @@ def handle_file(s3_path: str) -> dict:
                 cur=cur,
             )
 
-            # ----------------------
             # GE validation
-            # ----------------------
             df = (
                 df_raw.loc[:, list(sheet.columns.keys())]
                 if sheet.columns
@@ -207,14 +240,14 @@ def handle_file(s3_path: str) -> dict:
                     **ge_result["metrics"],
                 }
 
-                # persist GE JSON to S3
-                safe_sheet = sheet.name.replace(" ", "_")
-                safe_suite = suite_name.replace(" ", "_")
-
+                # ---- S3: GE JSON ----
                 if ENABLE_S3_OUTPUTS:
-                    ge_key = (
-                        f"validation-results/"
-                        f"{run_id}_{safe_sheet}_{safe_suite}.json"
+                    ge_key = build_key(
+                        validated_at=validated_at,
+                        dataset=dataset_name,
+                        sheet=sheet.name,
+                        extension="json",
+                        prefix="validation-results",
                     )
 
                     logger.info(
@@ -238,22 +271,19 @@ def handle_file(s3_path: str) -> dict:
                     suite_name,
                 )
 
-        # ----------------------
-        # Persist run summary
-        # ----------------------
+        # Persist run summary (single row)
         insert_validation_run(run_summary, cur)
 
-    # ----------------------
-    # Optional: route original dataset
-    # ----------------------
+    # ---- S3: archive original dataset ----
     if ENABLE_S3_OUTPUTS and file_bytes:
         status_prefix = "passes" if run_summary["success"] else "failed"
 
-        filename = s3_path.split("/")[-1].replace(" ", "_")
-
-        archive_key = (
-            f"{status_prefix}/"
-            f"{run_id}_{filename}"
+        archive_key = build_key(
+            validated_at=validated_at,
+            dataset=dataset_name,
+            sheet="dataset",
+            extension=dataset_name.split(".")[-1],
+            prefix=status_prefix,
         )
 
         upload_bytes(
