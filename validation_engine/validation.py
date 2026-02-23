@@ -2,22 +2,26 @@ import time
 import great_expectations as ge
 import pandas as pd
 
+
 def validate_dataframe(df: pd.DataFrame, suite_name: str) -> dict:
     start = time.time()
 
+    # Create validator from DataFrame
+    validator = ge.from_pandas(df)
+
+    # Load expectation suite from context
     context = ge.get_context()
     suite = context.get_expectation_suite(suite_name)
 
-    validator = context.get_validator(
-        batch_data=df,
-        expectation_suite_name=suite_name,
-    )
+    # Attach suite to validator
+    validator._expectation_suite = suite
 
+    # Run validation
     ge_result = validator.validate(result_format="SUMMARY").to_json_dict()
 
     duration_ms = int((time.time() - start) * 1000)
 
-    #Metrics
+    # ---- Metrics ----
     rules_total = len(ge_result["results"])
     rules_passed = sum(r["success"] for r in ge_result["results"])
     rules_failed = rules_total - rules_passed
