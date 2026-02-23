@@ -1,46 +1,63 @@
 # Data Validation Engine
 
-A containerized data quality validation service that validates datasets from Amazon S3 using Great Expectations, computes quality metrics, stores results in PostgreSQL, and routes validated files based on success or failure.
+A containerized, template-driven data quality validation service for validating
+tabular datasets (CSV, Excel, Parquet, Iceberg) from Amazon S3 and table catalogs
+using Great Expectations.
 
 ## Overview
 
 This service acts as a data quality layer in data pipelines.
 
-## Main capabilities
+## Main Capabilities
 
-- Load datasets from S3
+- Load datasets from Amazon S3 and table-based sources
+- Support multiple data formats:
+  - CSV
+  - Excel (multi-sheet)
+  - Parquet
+  - Apache Iceberg (logical tables)
+- Template-driven structural validation (schema, required columns)
+- Rule-based validation using Great Expectations
+- Compute data quality metrics (null ratio, duplicates, quality score, etc.)
+- Persist validation results to PostgreSQL
+- Enable observability and dashboards via Grafana
 
-- Validate data using Great Expectations
+## Supported Input Types
 
-- Compute additional data quality metrics
+| Type     | Source                  | Notes |
+|---------|--------------------------|------|
+| CSV     | S3 object                | Header-based |
+| Excel   | S3 object                | Multi-sheet support |
+| Parquet | S3 object                | Columnar, schema-aware |
+| Iceberg | Catalog-backed table     | Snapshot-aware, schema evolution support |
 
-- Store validation run metadata in PostgreSQL
-
-- Save validation reports back to S3
-
-- Route datasets into passes/ or failed/ folders
+Iceberg tables are treated as logical tables, not files.
 
 ## Architecture
 
 ### High-Level Flow
 
 ```
-S3 Dataset 
+S3 / Iceberg Table
      ↓
-Validation Engine  
+Template Resolution
+     ↓
+Dataset Reader (CSV / Excel / Parquet / Iceberg)
+     ↓
+Structural Validation
      ↓
 Great Expectations Validation
      ↓
 Quality Metrics Computation
      ↓
-PostgreSQL
-├── validation_runs (run-level summary)
-└── validation_rule_results (rule-level results)
-     ↓
-S3 Outputs
-├── validation-results/
-├── passes/
-└── failed/
+PostgreSQL (dq schema)
+```
+
+## Database Tables
+```
+dq.validation_runs
+dq.validation_rule_results
+dq.structural_validation_results
 ```
 
 ## Project Structure
@@ -55,22 +72,66 @@ S3 Outputs
 │ └── logging_config.py
 │
 ├── db/
-│ ├── init.py
 │ └── connection.py
 │
 ├── repository/
 │ ├── validation_run_repository.py
-│ └── validation_rule_repository.py
+│ ├── validation_rule_repository.py
+│ └── structural_validation_repository.py
 │
 ├── data_loader/
 │ └── s3_loader.py
 │
+├── file_parser/
+│ ├── base.py
+│ ├── csv.py
+│ ├── excel.py
+│ ├── parquet.py
+│ └── iceberg.py
+│
+├── template_engine/
+│ ├── models.py
+│ ├── registry.py
+│ └── resolver.py
+│
 ├── validation_engine/
+│ ├── handler.py
+│ ├── structural.py
 │ └── validation.py
 │
-├── gx/ # Great Expectations project
-└── test_data/ # Sample datasets
+├── gx/               # Great Expectations context
+└── templates/        # YAML validation templates
 ```
+
+## Template-Driven Validation
+
+Datasets are validated based on YAML templates that define:
+
+- File matching rules (regex)
+- File type (csv, excel, parquet, iceberg)
+- Sheets (for Excel)
+- Expected columns and requirements
+- Associated Great Expectations suites
+
+Example template:
+
+```yaml
+template_id: example_tabs
+version: 1
+file_type: excel
+file_pattern: ".*incoming/Excel.*\\.xlsx$"
+
+sheets:
+  - name: Tab A
+    header_row: 1
+    columns:
+      col 1:
+        required: true
+      col 2:
+        required: false
+    expectations:
+      - tab_a_checks
+```        
 
 ## Prerequisites
 
@@ -100,9 +161,7 @@ docker run --rm \
   -e DB_USER=$DB_USER \
   -e DB_PASSWORD=$DB_PASSWORD \
   data-validation-engine \
-  --dataset s3://input-bucket/path/data.csv \
-  --expectations my_expectation_suite \
-  --results-bucket validation-results-bucket
+  --dataset s3://input-bucket/path/data.xlsx
 ```
 
 ## Command Line Arguments
@@ -146,9 +205,14 @@ Designed to be used in Airflow, CI/CD pipelines, or automated quality gates.
 
 ## Creating an Expectation Suite
 ```
-python create_suite.py \
-  --dataset s3://input-bucket/sample.csv \
-  --suite-name my_expectation_suite
+Expectation suites are generated from templates and sample datasets.
+
+```bash
+python -m scripts.create_expectation_suite \
+  --dataset s3://input-bucket/sample.xlsx \
+  --template-id example_tabs \
+  --sheet-name "Tab A" \
+  --suite-name tab_a_checks
 ```
 
 ```yml
@@ -161,9 +225,13 @@ Example Console Output
    Details: {'unexpected_count': 14}
 ```
 
-## Database Schema
+## Update Database Schema section (schema-aware)
 
-### validation_runs
+### Database Schema (PostgreSQL)
+
+All tables are stored in the `dq` schema.
+
+### dq.validation_runs
 
 | Column | Description |
 |--------|------------|
@@ -183,7 +251,7 @@ Example Console Output
 
 ---
 
-### validation_rule_results
+### dq.validation_rule_results
 
 | Column | Description |
 |--------|------------|
@@ -195,17 +263,34 @@ Example Console Output
 | success | Rule result |
 | unexpected_count | Number of unexpected values |
 
+### dq.structural_validation_results
+
+| Column | Description |
+|------|------------|
+| run_id | Validation run ID |
+| sheet_name | Sheet validated |
+| passed | Structural validation result |
+| error_count | Number of errors |
+| warning_count | Number of warnings |
+| errors | JSON list of errors |
+| warnings | JSON list of warnings |
+| validated_at | Timestamp |
+
 ## Common Errors
+
 | Problem | Cause |
-|---------|------|
-| DB WRITE FAILED | Incorrect DB credentials or DB unreachable |
-| Unsupported file format | Only CSV and Excel supported |
-| Suite not found | Expectation suite missing in gx/ |
-| Access denied to S3 | IAM permissions missing |
+|------|------|
+| No template matches file | Dataset path does not match any template regex |
+| expectation_suite not found | Suite not created in gx/expectations |
+| permission denied for schema dq | Missing GRANT USAGE on schema |
+| Unsupported file type | file_type not registered in parser registry |
+| Iceberg table not found | Catalog or table identifier incorrect |
 
 ## Tech Stack
 - Storage: Amazon S3
+- Table Formats: Apache Iceberg
 - Validation: Great Expectations
-- Processing: Pandas
-- Observability: PostgreSQL
+- Processing: Pandas, PyArrow
+- Metadata Store: PostgreSQL
+- Visualization: Grafana
 - Containerization: Docker

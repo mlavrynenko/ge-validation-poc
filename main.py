@@ -28,13 +28,24 @@ def main():
     )
 
     try:
-        handle_file(args.dataset)
+        result = handle_file(args.dataset)
     except Exception:
         logger.exception("Validation pipeline failed")
         sys.exit(1)
 
-    logger.info("Validation pipeline completed successfully")
-    sys.exit(0)
+    logger.info(
+        "Validation completed | run_id=%s success=%s",
+        result["run_id"],
+        result["success"],
+    )
+
+    logger.info(
+        "Validation artefacts stored at %s",
+        result["results_prefix"],
+    )
+
+    # CI / Airflow-friendly exit code
+    sys.exit(0 if result["success"] else 1)
 
 
 if __name__ == "__main__":
