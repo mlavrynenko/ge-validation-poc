@@ -134,7 +134,6 @@ def handle_file(s3_path: str) -> dict:
     }
 
     run_summary = init_run_summary(meta)
-    sanitized_dataset = s3_path.replace("s3://", "").replace("/", "_")
 
     with get_db_cursor() as cur:
         for sheet in template.sheets:
@@ -208,14 +207,20 @@ def handle_file(s3_path: str) -> dict:
                     **ge_result["metrics"],
                 }
 
-                # --- Optional: persist GE JSON to S3
+                # persist GE JSON to S3
+                safe_sheet = sheet.name.replace(" ", "_")
+                safe_suite = suite_name.replace(" ", "_")
+
                 if ENABLE_S3_OUTPUTS:
                     ge_key = (
                         f"validation-results/"
-                        f"run_id={run_id}/"
-                        f"dataset={sanitized_dataset}/"
-                        f"sheet={sheet.name}/"
-                        f"suite={suite_name}.json"
+                        f"{run_id}_{safe_sheet}_{safe_suite}.json"
+                    )
+
+                    logger.info(
+                        "Uploading GE result | bucket=%s key=%s",
+                        RESULTS_BUCKET,
+                        ge_key,
                     )
 
                     upload_json(
@@ -244,10 +249,11 @@ def handle_file(s3_path: str) -> dict:
     if ENABLE_S3_OUTPUTS and file_bytes:
         status_prefix = "passes" if run_summary["success"] else "failed"
 
+        filename = s3_path.split("/")[-1].replace(" ", "_")
+
         archive_key = (
             f"{status_prefix}/"
-            f"run_id={run_id}/"
-            f"{s3_path.split('/')[-1]}"
+            f"{run_id}_{filename}"
         )
 
         upload_bytes(
@@ -260,8 +266,8 @@ def handle_file(s3_path: str) -> dict:
         "run_id": run_id,
         "success": run_summary["success"],
         "outputs_enabled": ENABLE_S3_OUTPUTS,
-        "results_prefix": (
-            f"s3://{RESULTS_BUCKET}/validation-results/run_id={run_id}/"
+        "results_location": (
+            f"s3://{RESULTS_BUCKET}/validation-results/"
             if ENABLE_S3_OUTPUTS
             else None
         ),
