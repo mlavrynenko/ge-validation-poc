@@ -259,6 +259,7 @@ def handle_file(s3_path: str) -> dict:
     return {
         "run_id": run_id,
         "success": run_summary["success"],
+        "outputs_enabled": ENABLE_S3_OUTPUTS,
         "results_prefix": (
             f"s3://{RESULTS_BUCKET}/validation-results/run_id={run_id}/"
             if ENABLE_S3_OUTPUTS

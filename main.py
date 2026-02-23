@@ -39,10 +39,13 @@ def main():
         result["success"],
     )
 
-    logger.info(
-        "Validation artefacts stored at %s",
-        result["results_prefix"],
-    )
+    if result["outputs_enabled"]:
+        logger.info(
+            "Validation artefacts stored at %s",
+            result["results_prefix"],
+        )
+    else:
+        logger.info("S3 artefacts not written (RESULTS_BUCKET not set)")
 
     # CI / Airflow-friendly exit code
     sys.exit(0 if result["success"] else 1)
