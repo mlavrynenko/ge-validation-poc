@@ -19,8 +19,11 @@ sheets:
         required: true
         type: date
 
-    expectations:
+    rules:
       - not_null_required
       - positive_amounts
       - unique_id
       - valid_dates
+
+    expectation_suite:
+      - orders_parquet_checks

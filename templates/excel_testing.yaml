@@ -40,7 +40,7 @@ sheets:
         required: true
         type: int
 
-    expectations:
+    expectation_suite:
       - tab_a_checks
 
   - name: Tab B
@@ -79,5 +79,5 @@ sheets:
         required: true
         type: int
 
-    expectations:
+    expectation_suite:
       - tab_b_checks

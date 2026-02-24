@@ -10,7 +10,8 @@ class SheetDef(BaseModel):
     required: bool
     header_row: Optional[int] = None
     columns: Optional[Dict[str, ColumnDef]] = None
-    expectations: Optional[List[str]] = None
+    rules: Optional[List[str]] = None
+    expectation_suite: Optional[List[str]] = None
 
 class TemplateDef(BaseModel):
     template_id: str

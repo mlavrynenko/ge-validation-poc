@@ -96,8 +96,13 @@ def main():
     for column in (sheet.columns or {}).keys():
         validator.expect_column_to_exist(column)
 
-    # Apply template-specific rules
-    for rule in sheet.expectations or []:
+    if not sheet.rules:
+        raise ValueError(
+            f"No rules defined for sheet '{sheet.name}' "
+            f"in template '{template.template_id}'"
+        )
+
+    for rule in sheet.rules:
         apply_rule(rule, validator, sheet)
 
     validator.expect_table_row_count_to_be_between(min_value=1)

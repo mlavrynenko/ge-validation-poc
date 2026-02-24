@@ -38,7 +38,7 @@ def run_structural_checks(
         expected_columns = set(sheet_def.columns.keys())
         actual_columns = set(df.columns)
 
-        #Reauired columns
+        #Required columns
         required_columns = {
             name for name, col in sheet_def.columns.items()
             if col.required

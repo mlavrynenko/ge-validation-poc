@@ -230,7 +230,19 @@ def handle_file(s3_path: str) -> dict:
                 else df_raw
             )
 
-            for suite_name in sheet.expectations or []:
+            if not sheet.expectation_suite:
+                raise ValueError(
+                    f"No validation expectation_suite defined for sheet '{sheet.name}' "
+                    f"in template '{template.template_id}'"
+                )
+
+            if sheet.rules:
+                logger.warning(
+                    "Rules are defined in template but ignored at runtime | sheet=%s",
+                    sheet.name,
+                )
+
+            for suite_name in sheet.expectation_suite:
                 ge_result = validate_dataframe(df, suite_name)
 
                 ge_result["meta"] = {
