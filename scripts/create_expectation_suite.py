@@ -10,6 +10,7 @@ from file_parser.parquet import ParquetParser
 from data_loader.s3_loader import download_file_bytes
 from template_engine.registry import TemplateRegistry
 from template_engine.resolver import TemplateResolver
+from validation_engine.rule_registry import apply_rule
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 TEMPLATES_DIR = PROJECT_ROOT / "templates"
@@ -91,10 +92,13 @@ def main():
     validator.context = context
     validator._expectation_suite.expectation_suite_name = args.suite_name
 
-    for column, col_def in (sheet.columns or {}).items():
+    # Always ensure expected columns exist
+    for column in (sheet.columns or {}).keys():
         validator.expect_column_to_exist(column)
-        if col_def.required:
-            validator.expect_column_values_to_not_be_null(column)
+
+    # Apply template-specific rules
+    for rule in sheet.expectations or []:
+        apply_rule(rule, validator, sheet)
 
     validator.expect_table_row_count_to_be_between(min_value=1)
     context.save_expectation_suite(validator._expectation_suite)

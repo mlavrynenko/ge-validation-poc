@@ -213,6 +213,42 @@ failed/
   <timestamp>__<dataset>__dataset.<ext>
 ```
 
+## Expectation Rules
+
+Framework applies data quality checks using **named expectation rules** that are declared in templates and translated into executable Great Expectations logic at runtime.
+
+This approach separates **business intent** from **validation implementation**, ensuring consistency, reuse, and auditability.
+
+---
+
+### Rule Declaration (Template-Level)
+
+Expectation rules are defined per sheet in the validation template:
+
+```yaml
+sheets:
+  - name: data
+    required: true
+    header_row: 1
+
+    columns:
+      id:
+        required: true
+        type: int
+      order_amount:
+        required: true
+        type: decimal
+      created_at:
+        required: true
+        type: date
+
+    expectations:
+      - not_null_required
+      - positive_amounts
+      - unique_id
+      - valid_dates
+``` 
+
 ## Creating an Expectation Suite
 
 Expectation suites must exist before validation runs.

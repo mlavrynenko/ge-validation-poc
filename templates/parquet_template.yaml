@@ -1,25 +1,26 @@
 template_id: orders_parquet
 version: 1
-
 file_type: parquet
-file_pattern: ".*\\.parquet$"
+file_pattern: ".*orders.*\\.parquet$"
 
 sheets:
   - name: data
     required: true
+    header_row: 1
 
     columns:
       id:
         required: true
-        type: integer
-
+        type: int
       order_amount:
         required: true
         type: decimal
-
       created_at:
         required: true
         type: date
 
     expectations:
-      - orders_parquet_checks
+      - not_null_required
+      - positive_amounts
+      - unique_id
+      - valid_dates
