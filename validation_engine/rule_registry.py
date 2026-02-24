@@ -47,7 +47,8 @@ def rule_positive(rule: RuleDef, validator, sheet: SheetDef) -> None:
         validator.expect_column_values_to_be_between(
             col,
             min_value=0,
-            strictly=True,
+            max_value=None,
+            strict_min=True,
         )
 
 

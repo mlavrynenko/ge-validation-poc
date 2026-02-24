@@ -20,10 +20,15 @@ sheets:
         type: date
 
     rules:
-      - not_null_required
-      - positive_amounts
-      - unique_id
-      - valid_dates
+      - name: not_null_required
+      - name: positive
+        columns: [order_amount]
+      - name: unique
+        columns: [id]
+      - name: date_format
+        columns: [created_at]
+        params:
+          format: "%Y-%m-%d"
 
     expectation_suite:
       - orders_parquet_checks
