@@ -4,9 +4,12 @@ import great_expectations as ge
 
 from pathlib import Path
 from core.logging_config import setup_logging
+
 from file_parser.csv import CsvParser
 from file_parser.excel import ExcelParser
 from file_parser.parquet import ParquetParser
+from file_parser.iceberg import IcebergParser
+
 from data_loader.s3_loader import download_file_bytes
 from template_engine.registry import TemplateRegistry
 from template_engine.resolver import TemplateResolver
@@ -20,6 +23,7 @@ PARSERS = {
     "csv": CsvParser,
     "excel": ExcelParser,
     "parquet": ParquetParser,
+    "iceberg": IcebergParser,
 }
 
 
@@ -27,12 +31,14 @@ def main():
     setup_logging()
     logger = logging.getLogger(__name__)
 
-    parser = argparse.ArgumentParser(description="Create GE expectation suite from template")
-    parser.add_argument("--dataset", required=True)
-    parser.add_argument("--template-id", required=True)
-    parser.add_argument("--sheet-name", required=True)
-    parser.add_argument("--suite-name", required=True)
-    args = parser.parse_args()
+    arg_parser = argparse.ArgumentParser(
+        description="Create GE expectation suite from template"
+    )
+    arg_parser.add_argument("--dataset", required=True)
+    arg_parser.add_argument("--template-id", required=True)
+    arg_parser.add_argument("--sheet-name", required=True)
+    arg_parser.add_argument("--suite-name", required=True)
+    args = arg_parser.parse_args()
 
     context = ge.get_context(context_root_dir=str(GX_DIR))
 
@@ -56,37 +62,44 @@ def main():
     if template.file_type not in PARSERS:
         raise ValueError(f"Unsupported file type: {template.file_type}")
 
-    file_bytes = download_file_bytes(args.dataset)
-
     # ----------------------
     # Read dataset for suite creation
     # ----------------------
 
-    parser = PARSERS[template.file_type]
+    data_parser = PARSERS[template.file_type]
 
-    if template.file_type == "parquet":
-        df = parser.read(
-            file_bytes=file_bytes,
-            usecols=list(sheet.columns.keys()) if sheet.columns else None,
-        )
-
-    elif template.file_type == "csv":
-        df = parser.read(
-            file_bytes=file_bytes,
-            header=sheet.header_row,
-            usecols=list(sheet.columns.keys()) if sheet.columns else None,
-        )
-
-    elif template.file_type == "excel":
-        df = parser.read(
-            file_bytes=file_bytes,
-            sheet_name=sheet.name,
-            header=sheet.header_row,
-            usecols=list(sheet.columns.keys()) if sheet.columns else None,
+    if template.file_type == "iceberg":
+        df = data_parser.read(
+            table_identifier=args.dataset.replace("iceberg://", ""),
+            columns=list(sheet.columns.keys()) if sheet.columns else None,
         )
 
     else:
-        raise ValueError(f"Unsupported file type for suite creation: {template.file_type}")
+        file_bytes = download_file_bytes(args.dataset)
+
+        if template.file_type == "parquet":
+            df = data_parser.read(
+                file_bytes=file_bytes,
+                usecols=list(sheet.columns.keys()) if sheet.columns else None,
+            )
+
+        elif template.file_type == "csv":
+            df = data_parser.read(
+                file_bytes=file_bytes,
+                header=sheet.header_row,
+                usecols=list(sheet.columns.keys()) if sheet.columns else None,
+            )
+
+        elif template.file_type == "excel":
+            df = data_parser.read(
+                file_bytes=file_bytes,
+                sheet_name=sheet.name,
+                header=sheet.header_row,
+                usecols=list(sheet.columns.keys()) if sheet.columns else None,
+            )
+
+        else:
+            raise ValueError(f"Unsupported file type for suite creation: {template.file_type}")
 
     validator = ge.from_pandas(df)
     validator.context = context

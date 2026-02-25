@@ -1,0 +1,32 @@
+template_id: orders_iceberg
+version: 1
+file_type: iceberg
+
+file_pattern: "^iceberg://dq_iceberg_dev\\.[a-zA-Z0-9_]+$"
+
+sheets:
+  - name: data
+    required: true
+
+    columns:
+      id:
+        required: true
+        type: int
+      order_amount:
+        required: true
+        type: decimal
+      created_at:
+        required: true
+        type: date
+
+    rules:
+      - name: not_null_required
+      - name: positive
+        columns: [order_amount]
+      - name: unique
+        columns: [id]
+      - name: date_type
+        columns: [created_at]
+
+    expectation_suite:
+      - orders_iceberg_checks

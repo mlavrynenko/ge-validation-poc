@@ -1,4 +1,5 @@
 from typing import Callable, Any
+import pandas as pd
 from template_engine.models import SheetDef, RuleDef
 
 RuleFn = Callable[[RuleDef, Any, SheetDef], None]
@@ -31,6 +32,10 @@ def _require_columns(
     return columns
 
 
+# -------------------------
+# Core rules
+# -------------------------
+
 def rule_not_null_required(rule: RuleDef, validator, sheet: SheetDef) -> None:
     if not sheet.columns:
         return
@@ -59,22 +64,49 @@ def rule_unique(rule: RuleDef, validator, sheet: SheetDef) -> None:
         validator.expect_column_values_to_be_unique(col)
 
 
-def rule_date_format(rule: RuleDef, validator, sheet: SheetDef) -> None:
-    columns = _require_columns(sheet, rule.columns, "date_format")
+# -------------------------
+# Date rules
+# -------------------------
 
+def rule_date_format(rule: RuleDef, validator, sheet: SheetDef) -> None:
+    """
+    Validate string-formatted dates (CSV / Excel only).
+    Safely skips already-typed datetime columns.
+    """
+    columns = _require_columns(sheet, rule.columns, "date_format")
     fmt = rule.params.get("format", "%Y-%m-%d") if rule.params else "%Y-%m-%d"
 
     for col in columns:
+        series = validator.get_column(col)
+
+        if pd.api.types.is_datetime64_any_dtype(series):
+            continue
+
         validator.expect_column_values_to_match_strftime_format(col, fmt)
 
 
-# ---- rule registry ----
+def rule_date_type(rule: RuleDef, validator, sheet: SheetDef) -> None:
+    """
+    Validate typed date/datetime columns (Parquet / Iceberg).
+    """
+    columns = _require_columns(sheet, rule.columns, "date_type")
+
+    for col in columns:
+        validator.expect_column_values_to_be_of_type(
+            col,
+            type_="datetime64[ns]"
+        )
+
+# -------------------------
+# Rule registry
+# -------------------------
 
 RULES: dict[str, RuleFn] = {
     "not_null_required": rule_not_null_required,
     "positive": rule_positive,
     "unique": rule_unique,
     "date_format": rule_date_format,
+    "date_type": rule_date_type,
 }
 
 

@@ -1,19 +1,19 @@
 from pyiceberg.catalog import load_catalog
 import pandas as pd
+from typing import List, Optional
 
 
 class IcebergParser:
     @staticmethod
     def read(
         table_identifier: str,
-        columns: list[str] | None = None,
-        catalog_name: str = "default",
+        columns: Optional[List[str]] = None,
+        catalog_name: str = "glue",
         **kwargs,
     ) -> pd.DataFrame:
         """
-        table_identifier example:
-        - glue.db.table
-        - warehouse.db.table
+        table_identifier examples:
+        - dq_iceberg_dev.orders
         """
 
         catalog = load_catalog(catalog_name)
@@ -22,7 +22,7 @@ class IcebergParser:
         scan = table.scan()
 
         if columns:
-            scan = scan.select(columns)
+            scan = scan.select(*columns)
 
         arrow_table = scan.to_arrow()
         return arrow_table.to_pandas()
