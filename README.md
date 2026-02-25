@@ -32,13 +32,23 @@ This service acts as a data quality layer in data pipelines.
 ## Supported Input Types
 
 | Type     | Source                  | Notes |
-|---------|--------------------------|------|
-| CSV     | S3 object                | Header-based |
-| Excel   | S3 object                | Multi-sheet support |
-| Parquet | S3 object                | Columnar, schema-aware |
-| Iceberg | Catalog-backed table     | Snapshot-aware, schema evolution support |
+|---------|-------------------------|------|
+| CSV     | S3 object               | Header-based |
+| Excel   | S3 object               | Multi-sheet support |
+| Parquet | S3 object               | Columnar, schema-aware |
+| Iceberg | Catalog table           | Logical table, not a file |
 
-Iceberg tables are treated as logical tables, not files.
+## Iceberg Datasets
+
+Iceberg datasets are treated as **logical tables**, not files.
+
+Example dataset identifier: iceberg://glue.dq_iceberg_dev.orders
+
+Key differences:
+- No S3 download
+- No header_row
+- Schema comes from the catalog
+- DATE columns may arrive as `datetime.date`
 
 ## Architecture
 
@@ -136,7 +146,7 @@ sheets:
         required: true
       col 2:
         required: false
-    expectations:
+    expectation_suite:
       - tab_a_checks
 ```        
 ### Logical Sheets
@@ -181,11 +191,10 @@ docker run --rm \
 ```
 
 ## Command Line Arguments
-| Argument | Description |
-|----------|------------|
-| --dataset | S3 path to input dataset |
-| --expectations | Expectation suite name |
-| --results-bucket | S3 bucket for outputs |
+| Argument            | Description |
+|---------------------|------------|
+| --dataset           | S3 path to input dataset |
+| --results-bucket    | S3 bucket for outputs |
 
 ## Execution Steps
 
@@ -213,11 +222,36 @@ failed/
   <timestamp>__<dataset>__dataset.<ext>
 ```
 
-## Expectation Rules
+## Rules vs Expectation Suites (Important)
 
-Framework applies data quality checks using **named expectation rules** that are declared in templates and translated into executable Great Expectations logic at runtime.
+This framework distinguishes clearly between:
 
-This approach separates **business intent** from **validation implementation**, ensuring consistency, reuse, and auditability.
+### Template Rules
+Rules are declared in templates to describe **validation intent**:
+
+- not_null_required
+- positive
+- unique
+- date_format
+- date_type
+
+Rules are used **only when generating expectation suites**
+(via `scripts.create_expectation_suite`).
+
+They are **NOT executed at runtime**.
+
+### Expectation Suites
+Expectation suites are the **only executable validation units**.
+
+At runtime:
+- The engine loads expectation suites from `gx/`
+- Template rules are ignored
+- A warning is logged if rules exist in the template
+
+```text
+Rules → used once → create expectation suite
+Suites → executed every run
+```
 
 ---
 
@@ -226,6 +260,11 @@ This approach separates **business intent** from **validation implementation**, 
 Expectation rules are defined per sheet in the validation template:
 
 ```yaml
+template_id: orders_parquet
+version: 1
+file_type: parquet
+file_pattern: ".*orders.*\\.parquet$"
+
 sheets:
   - name: data
     required: true
@@ -242,12 +281,31 @@ sheets:
         required: true
         type: date
 
-    expectations:
-      - not_null_required
-      - positive_amounts
-      - unique_id
-      - valid_dates
+    rules:
+      - name: not_null_required
+      - name: positive
+        columns: [order_amount]
+      - name: unique
+        columns: [id]
+      - name: date_format
+        columns: [created_at]
+        params:
+          format: "%Y-%m-%d"
+
+    expectation_suite:
+      - orders_parquet_checks
 ``` 
+
+### Iceberg-Specific Behavior
+
+Some rules behave differently for Iceberg datasets:
+
+- `date_type`
+  - Skips validation if column dtype is `object` (Iceberg DATE)
+- `expect_column_values_to_be_of_type`
+  - Automatically removed when generating Iceberg suites
+
+This avoids false failures caused by Iceberg → Pandas type coercion.
 
 ## Creating an Expectation Suite
 
@@ -264,6 +322,14 @@ python -m scripts.create_expectation_suite `
   --sheet-name data `
   --suite-name orders_parquet_checks
 ```
+
+## Validation Lifecycle
+
+1. Template written (rules optional)
+2. Expectation suite generated (rules applied)
+3. Dataset validated (suites only)
+4. Results stored in PostgreSQL
+5. Artefacts optionally written to S3
 
 ## Update Database Schema section (schema-aware)
 
