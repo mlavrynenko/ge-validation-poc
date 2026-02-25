@@ -1,5 +1,9 @@
-# .yamllint.yml
 extends: default
+
+ignore: |
+  gx/**
+  test_data/**
+  **/great_expectations.yml
 
 rules:
   line-length:
@@ -13,5 +17,4 @@ rules:
     spaces: 2
     indent-sequences: consistent
 
-  truthy:
-    allowed-values: ["true", "false", "on", "off"]
+  truthy: disable

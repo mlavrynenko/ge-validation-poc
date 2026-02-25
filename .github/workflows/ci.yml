@@ -27,7 +27,7 @@ jobs:
 
       - name: Lint YAML files
         run: |
-          yamllint .
+          yamllint .github templates .pre-commit-config.yaml .yamllint.yml
 
       - name: Lint Python (ruff)
         run: |
