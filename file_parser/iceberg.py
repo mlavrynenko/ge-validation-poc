@@ -1,5 +1,4 @@
 from pyiceberg.catalog import load_catalog
-import pandas as pd
 from typing import List, Optional
 
 
@@ -10,19 +9,26 @@ class IcebergParser:
         columns: Optional[List[str]] = None,
         catalog_name: str = "glue",
         **kwargs,
-    ) -> pd.DataFrame:
+    ):
         """
         table_identifier examples:
-        - dq_iceberg_dev.orders
+        - iceberg://glue.dq_iceberg_dev.orders
         """
 
+        # Remove URI scheme
+        identifier = table_identifier.replace("iceberg://", "")
+
+        # Remove catalog prefix if present
+        if identifier.startswith(f"{catalog_name}."):
+            identifier = identifier[len(catalog_name) + 1 :]
+
+        # identifier is now: dq_iceberg_dev.orders
         catalog = load_catalog(catalog_name)
-        table = catalog.load_table(table_identifier)
+        table = catalog.load_table(identifier)
 
         scan = table.scan()
 
         if columns:
             scan = scan.select(*columns)
 
-        arrow_table = scan.to_arrow()
-        return arrow_table.to_pandas()
+        return scan.to_arrow().to_pandas()

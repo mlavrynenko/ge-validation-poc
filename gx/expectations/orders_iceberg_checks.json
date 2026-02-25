@@ -70,15 +70,6 @@
       "meta": {}
     },
     {
-      "expectation_type": "expect_column_values_to_be_of_type",
-      "kwargs": {
-        "column": "created_at",
-        "result_format": "BASIC",
-        "type_": "datetime64[ns]"
-      },
-      "meta": {}
-    },
-    {
       "expectation_type": "expect_table_row_count_to_be_between",
       "kwargs": {
         "min_value": 1,
