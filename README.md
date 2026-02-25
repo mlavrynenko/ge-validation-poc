@@ -392,6 +392,22 @@ All tables are stored in the `dq` schema.
 | numpy import error | Python > 3.11 | Downgrade to Python 3.11 |
 | S3 artefacts not written | RESULTS_BUCKET not set | Set env var or CLI override |
 
+## Environment Configuration
+
+The application requires the following environment variables
+in all environments (dev, staging, prod):
+
+| Variable | Description |
+|--------|-------------|
+| APP_ENV | Runtime environment (`dev`, `staging`, `prod`) |
+| DB_HOST | PostgreSQL host |
+| DB_NAME | PostgreSQL database name |
+| DB_USER | PostgreSQL user |
+| DB_PASSWORD | PostgreSQL password |
+
+If any required variable is missing, the application will fail
+fast at startup.
+
 ## Tech Stack
 - Storage: Amazon S3
 - Table Formats: Apache Iceberg

@@ -3,6 +3,7 @@ import os
 import logging
 import argparse
 
+from core.settings import load_settings
 from core.logging_config import setup_logging
 from validation_engine.handler import handle_file
 
@@ -10,6 +11,10 @@ from validation_engine.handler import handle_file
 def main():
     setup_logging()
     logger = logging.getLogger(__name__)
+
+    settings = load_settings()
+
+    logger.info("Starting validation | env=%s", settings.APP_ENV)
 
     parser = argparse.ArgumentParser(
         description="Data Quality Validation Entry Point"

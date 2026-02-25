@@ -1,5 +1,8 @@
 name: CI
 
+env:
+  APP_ENV: ci
+
 on:
   pull_request:
   push:
@@ -11,11 +14,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
@@ -23,6 +24,14 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
+      - name: Validate environment configuration
+        run: |
+          python - <<EOF
+          from core.settings import load_settings
+          settings = load_settings()
+          print("Loaded settings for env:", settings.APP_ENV)
+          EOF
 
       - name: Verify imports
         run: |
@@ -70,9 +79,11 @@ jobs:
     needs: validate
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Build Docker image
-        run: |
-          docker build -t data-validation-engine .
+        run: docker build -t data-validation-engine .
+
+        docker run --rm \
+          -e APP_ENV=ci \
+          data-validation-engine --help || true
