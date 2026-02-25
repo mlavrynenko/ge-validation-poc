@@ -86,16 +86,16 @@ def rule_date_format(rule: RuleDef, validator, sheet: SheetDef) -> None:
 
 
 def rule_date_type(rule: RuleDef, validator, sheet: SheetDef) -> None:
-    """
-    Validate typed date/datetime columns (Parquet / Iceberg).
-    """
     columns = _require_columns(sheet, rule.columns, "date_type")
 
     for col in columns:
-        validator.expect_column_values_to_be_of_type(
-            col,
-            type_="datetime64[ns]"
-        )
+        series = validator.get_column(col)
+
+        if not pd.api.types.is_datetime64_any_dtype(series):
+            validator.expect_column_values_to_be_of_type(
+                col,
+                type_="datetime64"
+            )
 
 # -------------------------
 # Rule registry
