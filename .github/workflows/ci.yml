@@ -1,3 +1,4 @@
+---
 name: CI
 
 env:
@@ -6,7 +7,7 @@ env:
 on:
   pull_request:
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   validate:
@@ -31,7 +32,7 @@ jobs:
 
       - name: Lint Python (ruff)
         run: |
-          ruff check . 
+          ruff check .
 
       - name: Install dependencies
         run: |

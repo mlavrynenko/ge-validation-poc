@@ -1,3 +1,4 @@
+---
 template_id: orders_parquet
 version: 1
 file_type: parquet
