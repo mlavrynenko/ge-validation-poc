@@ -148,6 +148,13 @@ def handle_file(s3_path: str) -> dict:
     if not template:
         raise ValueError("No template matches file")
 
+    logger.info(
+        "Using template %s v%s for dataset=%s",
+        template.template_id,
+        template.version,
+        s3_path,
+    )
+
     if template.file_type not in PARSERS:
         raise ValueError(f"Unsupported file type: {template.file_type}")
 

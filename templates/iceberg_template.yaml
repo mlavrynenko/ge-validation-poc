@@ -1,5 +1,5 @@
 template_id: orders_iceberg
-version: 1
+version: 2
 file_type: iceberg
 
 file_pattern: "^iceberg://glue\\.dq_iceberg_dev\\.[a-zA-Z0-9_]+$"
@@ -15,9 +15,6 @@ sheets:
       order_amount:
         required: true
         type: decimal
-      created_at:
-        required: false
-        type: date
 
     rules:
       - name: not_null_required

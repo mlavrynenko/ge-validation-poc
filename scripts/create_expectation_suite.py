@@ -49,6 +49,13 @@ def main():
     if not template:
         raise ValueError(f"No template matched dataset: {args.dataset}")
 
+    logger.info(
+        "Using template %s v%s with columns=%s",
+        template.template_id,
+        template.version,
+        list(template.sheets[0].columns.keys())
+    )
+
     if template.template_id != args.template_id:
         raise ValueError(
             f"Template ID mismatch: expected '{args.template_id}', "
@@ -106,7 +113,18 @@ def main():
     validator._expectation_suite.expectation_suite_name = args.suite_name
 
     if template.file_type == "iceberg":
-        # Iceberg DATE → pandas object → GE type inference is invalid
+        removed = [
+            e for e in validator._expectation_suite.expectations
+            if e.expectation_type == "expect_column_values_to_be_of_type"
+        ]
+
+        if removed:
+            logger.info(
+                "Removed %d expect_column_values_to_be_of_type expectations "
+                "for Iceberg dataset",
+                len(removed),
+            )
+
         validator._expectation_suite.expectations = [
             e for e in validator._expectation_suite.expectations
             if e.expectation_type != "expect_column_values_to_be_of_type"
