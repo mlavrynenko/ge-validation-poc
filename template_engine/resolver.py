@@ -1,6 +1,6 @@
-import re
 import logging
-from typing import Optional
+import re
+
 from template_engine.models import TemplateDef
 
 logger = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ class TemplateResolver:
             [(t.template_id, t.version, t.file_pattern) for t in templates],
         )
 
-    def resolve(self, dataset: str) -> Optional[TemplateDef]:
+    def resolve(self, dataset: str) -> TemplateDef | None:
         logger.info("Resolving template for dataset='%s'", dataset)
 
         matches: list[TemplateDef] = []

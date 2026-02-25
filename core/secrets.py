@@ -1,6 +1,9 @@
 import json
+
 import boto3
+
 from core.errors import SettingsError
+
 
 class SecretsManagerError(RuntimeError):
     pass

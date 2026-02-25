@@ -1,5 +1,6 @@
-import pandas as pd
 from io import BytesIO
+
+import pandas as pd
 
 from file_parser.base import BaseParser
 

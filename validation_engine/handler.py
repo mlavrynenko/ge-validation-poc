@@ -1,33 +1,27 @@
-import uuid
 import logging
 import os
 import re
+import uuid
 from datetime import datetime
 
 from core.logging_config import setup_logging
-
+from data_loader.s3_loader import download_file_bytes
+from data_loader.s3_writer import upload_bytes, upload_json
+from db.connection import get_db_cursor
 from file_parser.csv import CsvParser
 from file_parser.excel import ExcelParser
-from file_parser.parquet import ParquetParser
 from file_parser.iceberg import IcebergParser
-
-from db.connection import get_db_cursor
-from data_loader.s3_loader import download_file_bytes
-from data_loader.s3_writer import upload_json, upload_bytes
-
+from file_parser.parquet import ParquetParser
+from repository.structural_validation_repository import insert_structural_result
+from repository.validation_rule_repository import insert_rule_results
+from repository.validation_run_repository import insert_validation_run
 from template_engine.registry import TemplateRegistry
 from template_engine.resolver import TemplateResolver
-
-from validation_engine.validation import validate_dataframe
 from validation_engine.structural import (
     StructuralValidationError,
     run_structural_checks,
 )
-
-from repository.validation_rule_repository import insert_rule_results
-from repository.validation_run_repository import insert_validation_run
-from repository.structural_validation_repository import insert_structural_result
-
+from validation_engine.validation import validate_dataframe
 
 # -------------------------------------------------------------------
 # Logging

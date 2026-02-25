@@ -1,10 +1,10 @@
-import sys
-import os
-import logging
 import argparse
+import logging
+import os
+import sys
 
-from core.settings import load_settings
 from core.logging_config import setup_logging
+from core.settings import load_settings
 from validation_engine.handler import handle_file
 
 

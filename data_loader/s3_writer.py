@@ -1,7 +1,8 @@
 import json
-import boto3
 from datetime import datetime
 from typing import Any
+
+import boto3
 
 s3 = boto3.client("s3")
 

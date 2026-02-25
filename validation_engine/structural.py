@@ -1,7 +1,9 @@
+from typing import Any
+
 import pandas as pd
-from typing import Dict, Any
 
 from template_engine.models import SheetDef
+
 
 class StructuralValidationError(Exception):
     """
@@ -12,7 +14,7 @@ class StructuralValidationError(Exception):
 def run_structural_checks(
         df: pd.DataFrame,
         sheet_def: SheetDef,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Run structural (schema-level) validation on a DataFrame
     based on the SheetDef template.

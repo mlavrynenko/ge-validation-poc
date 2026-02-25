@@ -1,5 +1,6 @@
 from psycopg2.extras import Json
 
+
 def insert_structural_result(
     result: dict,
     meta: dict,

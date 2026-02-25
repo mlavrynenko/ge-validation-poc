@@ -1,8 +1,10 @@
 import os
-from .dev import DevSettings
-from .staging import StagingSettings
-from .prod import ProdSettings
+
 from .base import SettingsError
+from .dev import DevSettings
+from .prod import ProdSettings
+from .staging import StagingSettings
+
 
 def load_settings():
     env = os.getenv("APP_ENV")

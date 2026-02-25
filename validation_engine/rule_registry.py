@@ -1,6 +1,9 @@
-from typing import Callable, Any
+from collections.abc import Callable
+from typing import Any
+
 import pandas as pd
-from template_engine.models import SheetDef, RuleDef
+
+from template_engine.models import RuleDef, SheetDef
 
 RuleFn = Callable[[RuleDef, Any, SheetDef], None]
 

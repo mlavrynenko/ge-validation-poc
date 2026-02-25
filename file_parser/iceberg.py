@@ -1,12 +1,12 @@
+
 from pyiceberg.catalog import load_catalog
-from typing import List, Optional
 
 
 class IcebergParser:
     @staticmethod
     def read(
         table_identifier: str,
-        columns: Optional[List[str]] = None,
+        columns: list[str] | None = None,
         catalog_name: str = "glue",
         **kwargs,
     ):

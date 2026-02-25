@@ -1,7 +1,9 @@
-import yaml
 from pathlib import Path
 
+import yaml
+
 from template_engine.models import TemplateDef
+
 
 class TemplateRegistry:
     def __init__(self, templates_path: str):

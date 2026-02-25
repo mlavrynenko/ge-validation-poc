@@ -1,9 +1,9 @@
-import os
-from core.secrets import SecretsManager
-from core.errors import SettingsError
-
 import logging
+import os
+
+from core.errors import SettingsError
 from core.logging_config import setup_logging
+from core.secrets import SecretsManager
 
 # -------------------------------------------------------------------
 # Logging

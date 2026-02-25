@@ -1,26 +1,28 @@
+from typing import Any
+
 from pydantic import BaseModel
-from typing import Dict, List, Optional, Any
+
 
 class ColumnDef(BaseModel):
     required: bool
-    type: Optional[str]
+    type: str | None
 
 class RuleDef(BaseModel):
     name: str
-    columns: Optional[List[str]] = None
-    params: Optional[Dict[str, Any]] = None
+    columns: list[str] | None = None
+    params: dict[str, Any] | None = None
 
 class SheetDef(BaseModel):
     name: str
     required: bool
-    header_row: Optional[int] = None
-    columns: Optional[Dict[str, ColumnDef]] = None
-    rules: Optional[List[RuleDef]] = None
-    expectation_suite: Optional[List[str]] = None
+    header_row: int | None = None
+    columns: dict[str, ColumnDef] | None = None
+    rules: list[RuleDef] | None = None
+    expectation_suite: list[str] | None = None
 
 class TemplateDef(BaseModel):
     template_id: str
     version: int
     file_type: str
     file_pattern: str
-    sheets: List[SheetDef]
+    sheets: list[SheetDef]

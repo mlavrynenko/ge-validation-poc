@@ -1,16 +1,15 @@
-import logging
 import argparse
+import logging
+from pathlib import Path
+
 import great_expectations as ge
 
-from pathlib import Path
 from core.logging_config import setup_logging
-
+from data_loader.s3_loader import download_file_bytes
 from file_parser.csv import CsvParser
 from file_parser.excel import ExcelParser
-from file_parser.parquet import ParquetParser
 from file_parser.iceberg import IcebergParser
-
-from data_loader.s3_loader import download_file_bytes
+from file_parser.parquet import ParquetParser
 from template_engine.registry import TemplateRegistry
 from template_engine.resolver import TemplateResolver
 from validation_engine.rule_registry import apply_rule

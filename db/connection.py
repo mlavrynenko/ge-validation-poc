@@ -1,8 +1,8 @@
-import os
+from contextlib import contextmanager
+
 import psycopg2
 
 from core.settings import load_settings
-from contextlib import contextmanager
 
 
 def get_connection():
