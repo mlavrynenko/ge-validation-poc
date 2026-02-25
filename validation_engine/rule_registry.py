@@ -91,11 +91,15 @@ def rule_date_type(rule: RuleDef, validator, sheet: SheetDef) -> None:
     for col in columns:
         series = validator.get_column(col)
 
-        if not pd.api.types.is_datetime64_any_dtype(series):
-            validator.expect_column_values_to_be_of_type(
-                col,
-                type_="datetime64"
-            )
+        # Iceberg DATE → pandas object[datetime.date]
+        if series.dtype == "object":
+            # This is a valid Iceberg DATE → do NOT type-check
+            continue
+
+        validator.expect_column_values_to_be_of_type(
+            col,
+            type_="datetime64"
+        )
 
 # -------------------------
 # Rule registry

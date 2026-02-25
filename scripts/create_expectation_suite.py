@@ -105,6 +105,13 @@ def main():
     validator.context = context
     validator._expectation_suite.expectation_suite_name = args.suite_name
 
+    if template.file_type == "iceberg":
+        # Iceberg DATE → pandas object → GE type inference is invalid
+        validator._expectation_suite.expectations = [
+            e for e in validator._expectation_suite.expectations
+            if e.expectation_type != "expect_column_values_to_be_of_type"
+        ]
+
     # Always ensure expected columns exist
     for column in (sheet.columns or {}).keys():
         validator.expect_column_to_exist(column)

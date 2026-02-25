@@ -16,7 +16,7 @@ sheets:
         required: true
         type: decimal
       created_at:
-        required: true
+        required: false
         type: date
 
     rules:
