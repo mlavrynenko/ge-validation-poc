@@ -1,0 +1,32 @@
+repos:
+  # ----------------------------
+  # General hygiene
+  # ----------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: check-added-large-files
+
+  # ----------------------------
+  # YAML linting
+  # ----------------------------
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.35.1
+    hooks:
+      - id: yamllint
+        args: ["-c", ".yamllint.yml"]
+
+  # ----------------------------
+  # Python linting (ruff)
+  # ----------------------------
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.3.7
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+      # Optional: formatter (enable later if you want)
+      # - id: ruff-format

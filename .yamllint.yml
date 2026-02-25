@@ -1,0 +1,17 @@
+# .yamllint.yml
+extends: default
+
+rules:
+  line-length:
+    max: 120
+    level: warning
+
+  trailing-spaces: enable
+  new-line-at-end-of-file: enable
+
+  indentation:
+    spaces: 2
+    indent-sequences: consistent
+
+  truthy:
+    allowed-values: ["true", "false", "on", "off"]

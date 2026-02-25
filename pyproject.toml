@@ -1,0 +1,26 @@
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+
+# Enable core rules
+select = [
+  "E",   # pycodestyle errors
+  "F",   # pyflakes
+  "I",   # isort (import order)
+  "B",   # bugbear
+  "UP",  # pyupgrade
+]
+
+# Rules we explicitly ignore (intentional)
+ignore = [
+  "E501",  # line length (handled by formatter / readability)
+]
+
+# Exclude generated / external dirs
+exclude = [
+  ".git",
+  "__pycache__",
+  ".venv",
+  "gx",          # GE context (generated)
+  "test_data",
+]

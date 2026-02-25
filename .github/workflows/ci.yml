@@ -20,9 +20,21 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
+      - name: Install tooling
         run: |
           python -m pip install --upgrade pip
+          pip install yamllint ruff
+
+      - name: Lint YAML files
+        run: |
+          yamllint .
+
+      - name: Lint Python (ruff)
+        run: |
+          ruff check . 
+
+      - name: Install dependencies
+        run: |
           pip install -r requirements.txt
 
       - name: Validate environment configuration
@@ -84,6 +96,8 @@ jobs:
       - name: Build Docker image
         run: docker build -t data-validation-engine .
 
-        docker run --rm \
-          -e APP_ENV=ci \
-          data-validation-engine --help || true
+      - name: Smoke test container startup
+        run: |
+          docker run --rm \
+            -e APP_ENV=ci \
+            data-validation-engine --help || true
