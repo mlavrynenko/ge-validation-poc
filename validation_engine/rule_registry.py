@@ -20,7 +20,7 @@ def _get_mostly(rule: RuleDef) -> float | None:
         raise ValueError("Parameter 'mostly' must be a number")
 
     if not (0 < mostly <= 1):
-        raise ValueError("Parameter 'mostly' must be between 0 and 1")
+        raise ValueError("Parameter 'mostly' must be in (0, 1]")
 
     return float(mostly)
 
@@ -57,11 +57,16 @@ def _require_columns(
 
 def rule_not_null_required(rule: RuleDef, validator, sheet: SheetDef) -> None:
     if not sheet.columns:
-        return
+        raise ValueError(
+            "Rule 'not_null_required' requires columns in the template"
+        )
 
     for col, col_def in sheet.columns.items():
         if col_def.required:
-            validator.expect_column_values_to_not_be_null(col)
+            validator.expect_column_values_to_not_be_null(
+                col,
+                result_format="SUMMARY",
+            )
 
 
 def rule_positive(rule: RuleDef, validator, sheet: SheetDef) -> None:
@@ -75,6 +80,7 @@ def rule_positive(rule: RuleDef, validator, sheet: SheetDef) -> None:
             max_value=None,
             strict_min=True,
             mostly=mostly,
+            result_format="SUMMARY",
         )
 
 
@@ -86,6 +92,7 @@ def rule_unique(rule: RuleDef, validator, sheet: SheetDef) -> None:
         validator.expect_column_values_to_be_unique(
             col,
             mostly=mostly,
+            result_format="SUMMARY",
         )
 
 def rule_distinct_values_in_set(rule: RuleDef, validator, sheet: SheetDef) -> None:
@@ -106,20 +113,32 @@ def rule_distinct_values_in_set(rule: RuleDef, validator, sheet: SheetDef) -> No
         )
 
     allowed_values = rule.params["allowed_values"]
-    mostly = rule.params.get("mostly")
 
     if not isinstance(allowed_values, list) or not allowed_values:
         raise ValueError(
             "Rule 'distinct_values_in_set' requires a non-empty list of allowed_values"
         )
 
+    if mostly is not None:
+        if not isinstance(mostly, (int, float)) or not (0 < mostly <= 1):
+            raise ValueError(
+                "Rule 'distinct_values_in_set' param 'mostly' must be a float in (0, 1]"
+            )
+
+    mostly = _get_mostly(rule)
     column = columns[0]
 
-    validator.expect_column_values_to_be_in_set(
-        column=column,
-        value_set=allowed_values,
-        mostly=mostly,
-    )
+    kwargs = {
+        "column": column,
+        "value_set": allowed_values,
+        "result_format": "SUMMARY",
+    }
+
+    # Only pass mostly if explicitly defined
+    if mostly is not None:
+        kwargs["mostly"] = mostly
+
+    validator.expect_column_values_to_be_in_set(**kwargs)
 
 
 # -------------------------
@@ -140,7 +159,11 @@ def rule_date_format(rule: RuleDef, validator, sheet: SheetDef) -> None:
         if pd.api.types.is_datetime64_any_dtype(series):
             continue
 
-        validator.expect_column_values_to_match_strftime_format(col, fmt)
+        validator.expect_column_values_to_match_strftime_format(
+            col,
+            fmt,
+            result_format="SUMMARY",
+        )
 
 
 def rule_date_type(rule: RuleDef, validator, sheet: SheetDef) -> None:
@@ -156,7 +179,8 @@ def rule_date_type(rule: RuleDef, validator, sheet: SheetDef) -> None:
 
         validator.expect_column_values_to_be_of_type(
             col,
-            type_="datetime64"
+            type_="datetime64",
+            result_format="SUMMARY",
         )
 
 # -------------------------
