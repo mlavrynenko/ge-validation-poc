@@ -7,6 +7,22 @@ from template_engine.models import RuleDef, SheetDef
 
 RuleFn = Callable[[RuleDef, Any, SheetDef], None]
 
+def _get_mostly(rule: RuleDef) -> float | None:
+    if not rule.params:
+        return None
+
+    mostly = rule.params.get("mostly")
+
+    if mostly is None:
+        return None
+
+    if not isinstance(mostly, (int, float)):
+        raise ValueError("Parameter 'mostly' must be a number")
+
+    if not (0 < mostly <= 1):
+        raise ValueError("Parameter 'mostly' must be between 0 and 1")
+
+    return float(mostly)
 
 def _require_columns(
     sheet: SheetDef,
@@ -50,6 +66,7 @@ def rule_not_null_required(rule: RuleDef, validator, sheet: SheetDef) -> None:
 
 def rule_positive(rule: RuleDef, validator, sheet: SheetDef) -> None:
     columns = _require_columns(sheet, rule.columns, "positive")
+    mostly = _get_mostly(rule)
 
     for col in columns:
         validator.expect_column_values_to_be_between(
@@ -57,14 +74,52 @@ def rule_positive(rule: RuleDef, validator, sheet: SheetDef) -> None:
             min_value=0,
             max_value=None,
             strict_min=True,
+            mostly=mostly,
         )
 
 
 def rule_unique(rule: RuleDef, validator, sheet: SheetDef) -> None:
     columns = _require_columns(sheet, rule.columns, "unique")
+    mostly = _get_mostly(rule)
 
     for col in columns:
-        validator.expect_column_values_to_be_unique(col)
+        validator.expect_column_values_to_be_unique(
+            col,
+            mostly=mostly,
+        )
+
+def rule_distinct_values_in_set(rule: RuleDef, validator, sheet: SheetDef) -> None:
+    """
+    Expect column values to be in an allowed set.
+    Supports `mostly`.
+    """
+    columns = _require_columns(sheet, rule.columns, "distinct_values_in_set")
+
+    if len(columns) != 1:
+        raise ValueError(
+            "Rule 'distinct_values_in_set' supports exactly one column"
+        )
+
+    if not rule.params or "allowed_values" not in rule.params:
+        raise ValueError(
+            "Rule 'distinct_values_in_set' requires params.allowed_values"
+        )
+
+    allowed_values = rule.params["allowed_values"]
+    mostly = rule.params.get("mostly")
+
+    if not isinstance(allowed_values, list) or not allowed_values:
+        raise ValueError(
+            "Rule 'distinct_values_in_set' requires a non-empty list of allowed_values"
+        )
+
+    column = columns[0]
+
+    validator.expect_column_values_to_be_in_set(
+        column=column,
+        value_set=allowed_values,
+        mostly=mostly,
+    )
 
 
 # -------------------------
@@ -114,6 +169,7 @@ RULES: dict[str, RuleFn] = {
     "unique": rule_unique,
     "date_format": rule_date_format,
     "date_type": rule_date_type,
+    "distinct_values_in_set": rule_distinct_values_in_set,
 }
 
 

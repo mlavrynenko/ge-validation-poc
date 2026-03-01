@@ -1,6 +1,5 @@
----
 template_id: example_tabs
-version: 1
+version: 2
 file_type: excel
 file_pattern: ".*incoming/Excel.*\\.xlsx$"
 
@@ -41,6 +40,21 @@ sheets:
         required: true
         type: int
 
+    rules:
+      - name: not_null_required
+
+      - name: positive
+        columns: [col 5, col 7, col 9]
+
+      - name: unique
+        columns: [col 1]
+
+      - name: distinct_values_in_set
+        columns: [col 1]
+        params:
+          allowed_values: [E011, E012]
+          mostly: 0.05 #At least 5% of rows must have values from this set
+
     expectation_suite:
       - tab_a_checks
 
@@ -79,6 +93,15 @@ sheets:
       col 10:
         required: true
         type: int
+
+    rules:
+      - name: not_null_required
+
+      - name: positive
+        columns: [col 5, col 7, col 9]
+
+      - name: unique
+        columns: [col 1]
 
     expectation_suite:
       - tab_b_checks

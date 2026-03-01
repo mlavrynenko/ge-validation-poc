@@ -1,5 +1,6 @@
-import argparse
+import os
 import logging
+import argparse
 from pathlib import Path
 
 import great_expectations as ge
@@ -144,6 +145,11 @@ def main():
 
     validator.expect_table_row_count_to_be_between(min_value=1)
     context.save_expectation_suite(validator._expectation_suite)
+
+    # DEV-ONLY: build Data Docs
+    if os.getenv("APP_ENV") == "dev":
+        context.build_data_docs()
+        logger.info("GE Data Docs generated (local dev only)")
 
     logger.info("Expectation suite '%s' created successfully", args.suite_name)
 

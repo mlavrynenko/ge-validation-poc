@@ -11,6 +11,78 @@
       "meta": {}
     },
     {
+      "expectation_type": "expect_column_to_exist",
+      "kwargs": {
+        "column": "col 2",
+        "result_format": "BASIC"
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_to_exist",
+      "kwargs": {
+        "column": "col 3",
+        "result_format": "BASIC"
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_to_exist",
+      "kwargs": {
+        "column": "col 4",
+        "result_format": "BASIC"
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_to_exist",
+      "kwargs": {
+        "column": "col 5",
+        "result_format": "BASIC"
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_to_exist",
+      "kwargs": {
+        "column": "col 6",
+        "result_format": "BASIC"
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_to_exist",
+      "kwargs": {
+        "column": "col 7",
+        "result_format": "BASIC"
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_to_exist",
+      "kwargs": {
+        "column": "col 8",
+        "result_format": "BASIC"
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_to_exist",
+      "kwargs": {
+        "column": "col 9",
+        "result_format": "BASIC"
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_to_exist",
+      "kwargs": {
+        "column": "col 10",
+        "result_format": "BASIC"
+      },
+      "meta": {}
+    },
+    {
       "expectation_type": "expect_column_values_to_not_be_null",
       "kwargs": {
         "column": "col 1",
@@ -19,25 +91,9 @@
       "meta": {}
     },
     {
-      "expectation_type": "expect_column_to_exist",
-      "kwargs": {
-        "column": "col 2",
-        "result_format": "BASIC"
-      },
-      "meta": {}
-    },
-    {
       "expectation_type": "expect_column_values_to_not_be_null",
       "kwargs": {
         "column": "col 2",
-        "result_format": "BASIC"
-      },
-      "meta": {}
-    },
-    {
-      "expectation_type": "expect_column_to_exist",
-      "kwargs": {
-        "column": "col 3",
         "result_format": "BASIC"
       },
       "meta": {}
@@ -51,25 +107,9 @@
       "meta": {}
     },
     {
-      "expectation_type": "expect_column_to_exist",
-      "kwargs": {
-        "column": "col 4",
-        "result_format": "BASIC"
-      },
-      "meta": {}
-    },
-    {
       "expectation_type": "expect_column_values_to_not_be_null",
       "kwargs": {
         "column": "col 4",
-        "result_format": "BASIC"
-      },
-      "meta": {}
-    },
-    {
-      "expectation_type": "expect_column_to_exist",
-      "kwargs": {
-        "column": "col 5",
         "result_format": "BASIC"
       },
       "meta": {}
@@ -83,25 +123,9 @@
       "meta": {}
     },
     {
-      "expectation_type": "expect_column_to_exist",
-      "kwargs": {
-        "column": "col 6",
-        "result_format": "BASIC"
-      },
-      "meta": {}
-    },
-    {
       "expectation_type": "expect_column_values_to_not_be_null",
       "kwargs": {
         "column": "col 6",
-        "result_format": "BASIC"
-      },
-      "meta": {}
-    },
-    {
-      "expectation_type": "expect_column_to_exist",
-      "kwargs": {
-        "column": "col 7",
         "result_format": "BASIC"
       },
       "meta": {}
@@ -115,25 +139,9 @@
       "meta": {}
     },
     {
-      "expectation_type": "expect_column_to_exist",
-      "kwargs": {
-        "column": "col 8",
-        "result_format": "BASIC"
-      },
-      "meta": {}
-    },
-    {
       "expectation_type": "expect_column_values_to_not_be_null",
       "kwargs": {
         "column": "col 8",
-        "result_format": "BASIC"
-      },
-      "meta": {}
-    },
-    {
-      "expectation_type": "expect_column_to_exist",
-      "kwargs": {
-        "column": "col 9",
         "result_format": "BASIC"
       },
       "meta": {}
@@ -147,7 +155,7 @@
       "meta": {}
     },
     {
-      "expectation_type": "expect_column_to_exist",
+      "expectation_type": "expect_column_values_to_not_be_null",
       "kwargs": {
         "column": "col 10",
         "result_format": "BASIC"
@@ -155,10 +163,60 @@
       "meta": {}
     },
     {
-      "expectation_type": "expect_column_values_to_not_be_null",
+      "expectation_type": "expect_column_values_to_be_between",
       "kwargs": {
-        "column": "col 10",
+        "column": "col 5",
+        "max_value": null,
+        "min_value": 0,
+        "mostly": null,
+        "result_format": "BASIC",
+        "strict_min": true
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "col 7",
+        "max_value": null,
+        "min_value": 0,
+        "mostly": null,
+        "result_format": "BASIC",
+        "strict_min": true
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "col 9",
+        "max_value": null,
+        "min_value": 0,
+        "mostly": null,
+        "result_format": "BASIC",
+        "strict_min": true
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_unique",
+      "kwargs": {
+        "column": "col 1",
+        "mostly": null,
         "result_format": "BASIC"
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_in_set",
+      "kwargs": {
+        "column": "col 1",
+        "mostly": 0.05,
+        "result_format": "BASIC",
+        "value_set": [
+          "E011",
+          "E012"
+        ]
       },
       "meta": {}
     },
