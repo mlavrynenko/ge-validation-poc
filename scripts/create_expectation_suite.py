@@ -1,6 +1,6 @@
-import os
-import logging
 import argparse
+import logging
+import os
 from pathlib import Path
 
 import great_expectations as ge
