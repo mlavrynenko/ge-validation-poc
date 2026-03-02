@@ -12,7 +12,7 @@ def _get_mostly(rule: RuleDef) -> float | None:
     Extract and validate `mostly` parameter.
     Shared across all rules supporting partial success.
     """
-    
+
     if not rule.params:
         return None
 
