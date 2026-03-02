@@ -61,16 +61,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install ruff yamllint
 
-      - name: Lint Python (ruff)
-        run: ruff check .
-
-      - name: Lint YAML
-        run: |
-          yamllint \
-            .github \
-            ${{ inputs.templates-path }} \
-            .pre-commit-config.yaml \
-            .yamllint.yml
+      - name: Lint (YAML + Python)
+        run: make lint
 
   engine-checks:
     name: Engine sanity checks
