@@ -1,14 +1,12 @@
-# Makefile
+.PHONY: lint format
 
-.PHONY: lint lint-yaml lint-python
-
-lint: lint-yaml lint-python
-	@echo "✅ All lint checks passed"
-
-lint-yaml:
-	@echo "🔍 Linting YAML files..."
-	yamllint .
-
-lint-python:
-	@echo "🐍 Linting Python code..."
+format:
+	@echo "🛠️ Formatting Python..."
 	ruff check . --fix
+	@echo "✅ Formatting complete"
+
+lint:
+	@echo "🔍 Running linters..."
+	yamllint .
+	ruff check .
+	@echo "✅ All lint checks passed"
