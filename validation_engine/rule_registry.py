@@ -8,6 +8,11 @@ from template_engine.models import RuleDef, SheetDef
 RuleFn = Callable[[RuleDef, Any, SheetDef], None]
 
 def _get_mostly(rule: RuleDef) -> float | None:
+    """
+    Extract and validate `mostly` parameter.
+    Shared across all rules supporting partial success.
+    """
+    
     if not rule.params:
         return None
 
@@ -119,13 +124,8 @@ def rule_distinct_values_in_set(rule: RuleDef, validator, sheet: SheetDef) -> No
             "Rule 'distinct_values_in_set' requires a non-empty list of allowed_values"
         )
 
-    if mostly is not None:
-        if not isinstance(mostly, (int, float)) or not (0 < mostly <= 1):
-            raise ValueError(
-                "Rule 'distinct_values_in_set' param 'mostly' must be a float in (0, 1]"
-            )
-
     mostly = _get_mostly(rule)
+
     column = columns[0]
 
     kwargs = {
@@ -134,7 +134,6 @@ def rule_distinct_values_in_set(rule: RuleDef, validator, sheet: SheetDef) -> No
         "result_format": "SUMMARY",
     }
 
-    # Only pass mostly if explicitly defined
     if mostly is not None:
         kwargs["mostly"] = mostly
 
