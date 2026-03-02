@@ -28,15 +28,14 @@ on:
         type: boolean
         default: false
 
-      enable-helm-render:
-        type: boolean
-        default: false
-
       enable-release:
         type: boolean
         default: false
 
 env:
+  CHECKOUT_REF: ${{ inputs.git-ref || github.sha }}
+
+  # App defaults
   APP_ENV: ci
   DB_HOST: localhost
   DB_NAME: dummy
@@ -51,7 +50,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.git-ref || github.sha }}
+          ref: ${{ env.CHECKOUT_REF }}
 
       - uses: actions/setup-python@v5
         with:
@@ -81,7 +80,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.git-ref || github.sha }}
+          ref: ${{ env.CHECKOUT_REF }}
 
       - uses: actions/setup-python@v5
         with:
@@ -119,7 +118,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.git-ref || github.sha }}
+          ref: ${{ env.CHECKOUT_REF }}
 
       - uses: actions/setup-python@v5
         with:
@@ -176,11 +175,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.git-ref || github.sha }}
+          ref: ${{ env.CHECKOUT_REF }}
 
       - name: Build Docker image
-        run: |
-          docker build -t ${{ inputs.docker-image-name }} .
+        run: docker build -t ${{ inputs.docker-image-name }} .
 
       - name: Smoke test container startup
         run: |
@@ -200,7 +198,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.git-ref || github.sha }}
+          ref: ${{ env.CHECKOUT_REF }}
+
+      - name: Build Docker image
+        run: docker build -t ${{ inputs.docker-image-name }} .
 
       - name: Login to container registry
         run: |
@@ -218,9 +219,7 @@ jobs:
   deployment-artifacts:
     name: Generate deployment metadata
     runs-on: ubuntu-latest
-    needs:
-      - docker
-      - docker-push
+    needs: docker
     if: inputs.deploy-environment != 'dev'
 
     environment:
@@ -229,7 +228,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.git-ref || github.sha }}
+          ref: ${{ env.CHECKOUT_REF }}
 
       - name: Generate deployment metadata
         run: |
@@ -239,7 +238,7 @@ jobs:
             "environment": "${{ inputs.deploy-environment }}",
             "image": "${{ inputs.docker-image-name }}",
             "image_tag": "${{ github.sha }}",
-            "git_ref": "${{ inputs.git-ref || github.sha }}",
+            "git_ref": "${{ env.CHECKOUT_REF }}",
             "build_time": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
             "ci_run_id": "${{ github.run_id }}"
           }
@@ -257,7 +256,6 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - docker
-      - docker-push
       - deployment-artifacts
     if: |
       inputs.enable-release == true &&
@@ -274,5 +272,3 @@ jobs:
           tag_name: v${{ github.run_number }}
           name: Data Validation Engine v${{ github.run_number }}
           generate_release_notes: true
-inputs:
-  git-ref:
