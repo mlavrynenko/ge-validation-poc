@@ -1,21 +1,25 @@
 ---
 extends: default
 
-ignore: |
-  gx/**
-  test_data/**
-  **/great_expectations.yml
-
 rules:
   line-length:
     max: 120
     level: warning
 
-  trailing-spaces: enable
-  new-line-at-end-of-file: enable
-
   indentation:
     spaces: 2
     indent-sequences: consistent
 
-  truthy: disable
+  trailing-spaces: enable
+
+  truthy:
+    allowed-values: ["true", "false", "on", "off"]
+
+  document-start: disable
+
+ignore: |
+  .venv/
+  .ruff_cache/
+  gx/**
+  test_data/**
+  **/great_expectations.yml

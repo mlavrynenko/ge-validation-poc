@@ -7,6 +7,6 @@ format:
 
 lint:
 	@echo "🔍 Running linters..."
-	yamllint .
+	yamllint -f parsable .
 	ruff check .
 	@echo "✅ All lint checks passed"

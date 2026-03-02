@@ -53,7 +53,7 @@ sheets:
         columns: [col 1]
         params:
           allowed_values: [E011, E012]
-          mostly: 0.05 #At least 5% of rows must have values from this set
+          mostly: 0.05 # At least 5% of rows must have values from this set
 
     expectation_suite:
       - tab_a_checks
