@@ -15,5 +15,4 @@ jobs:
 
       deploy-environment: dev
       enable-docker-push: false
-      enable-helm-render: false
       enable-release: false
