@@ -1,0 +1,19 @@
+name: CI – Dev
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  dq-ci-dev:
+    uses: ./.github/workflows/ci-reusable.yml
+    with:
+      python-version: "3.11"
+      templates-path: "templates"
+      docker-image-name: "data-quality-validation-engine"
+
+      deploy-environment: dev
+      enable-docker-push: false
+      enable-helm-render: false
+      enable-release: false

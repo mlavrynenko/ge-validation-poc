@@ -1,0 +1,22 @@
+name: Promote to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      git-ref:
+        description: Commit SHA or release tag to promote
+        required: true
+        type: string
+
+jobs:
+  dq-ci-prod:
+    uses: ./.github/workflows/ci-reusable.yml
+    with:
+      git-ref: ${{ inputs.git-ref }}
+      python-version: "3.11"
+      templates-path: "templates"
+      docker-image-name: "data-quality-validation-engine"
+
+      deploy-environment: prod
+      enable-docker-push: true
+      enable-release: true

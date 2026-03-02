@@ -1,0 +1,22 @@
+name: Promote to Staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      git-ref:
+        description: Commit SHA or tag to promote
+        required: true
+        type: string
+
+jobs:
+  dq-ci-staging:
+    uses: ./.github/workflows/ci-reusable.yml
+    with:
+      git-ref: ${{ inputs.git-ref }}
+      python-version: "3.11"
+      templates-path: "templates"
+      docker-image-name: "data-quality-validation-engine"
+
+      deploy-environment: staging
+      enable-docker-push: true
+      enable-release: false
